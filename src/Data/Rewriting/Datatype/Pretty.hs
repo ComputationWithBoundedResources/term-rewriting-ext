@@ -1,7 +1,7 @@
 -- This file is part of the 'term-rewriting' library-fork. It is licensed under
 -- an MIT license. See the accompanying 'LICENSE' file for details.
 --
--- Authors: Manuel Schneckenreither
+-- Author: Manuel Schneckenreither
 
 module Data.Rewriting.Datatype.Pretty
     ( prettyDatatype
@@ -21,24 +21,23 @@ prettyDatatype :: Doc -> (dt -> Doc) -> (cn -> Doc) -> (c -> Doc) -> Datatype dt
 prettyDatatype arr pDt pCn pC (Datatype dtName cs) =
     hang 2 $ pDt dtName <+> arr <+>
          (if isRecursive cs
-          then (text "µX.< ")
-          else (text "< ")) <+>
-         (hsep $ (intersperse (text ", ")) (map pCtr cs)) <+> text " >"
+          then (text "µX.<")
+          else (text "<")) <+>
+         (hcat $ (intersperse (text ", ")) (map pCtr cs)) <+> text ">"
     where
-      isRecursive cs = True     -- TODO: !!!
+      isRecursive = any (\(Constructor _ ch _) -> any (\ctrCh -> case ctrCh of
+                                                                  ConstructorRecursive -> True
+                                                                  _ -> False
+                                                                  ) ch)
       pCtr = prettyConstructor (text ":") pDt pCn pC
 
 
 prettyConstructor :: Doc -> (dt -> Doc) -> (cn -> Doc) -> (c -> Doc) -> Constructor dt cn c -> Doc
 prettyConstructor arr _   pCn pC (Constructor cn [] cst) =
-    pCn cn <> (case cst of
-                  CostEmpty -> empty
-                  _ -> arr <> prettyCost pC cst)
+    pCn cn <> (case cst of; CostEmpty -> empty; _ -> arr <> prettyCost pC cst)
 prettyConstructor arr pDt pCn pC  (Constructor cn chlds cst) =
-    pCn cn <+> text "(" <+> (hsep $ intersperse (text ", ") (map pCChld chlds)) <+>
-        text ")" <> (case cst of
-                       CostEmpty -> empty
-                       _ -> arr <> prettyCost pC cst)
+    pCn cn <> text "(" <> (hcat $ intersperse (text ", ") (map pCChld chlds)) <>
+        text ")" <> (case cst of; CostEmpty -> empty; _ -> arr <> prettyCost pC cst)
     where
       pCChld = prettyConstructorChild pDt pC
 
@@ -47,7 +46,7 @@ prettyConstructorChild :: (dt -> Doc) -> (c -> Doc) -> ConstructorChild dt c -> 
 prettyConstructorChild _   _  (ConstructorRecursive)        = text "X"
 prettyConstructorChild pDt _  (ConstructorDatatype dt [])   = pDt dt
 prettyConstructorChild pDt pC (ConstructorDatatype dt csts) =
-    pDt dt <+> text "(" <+> (hsep $ (intersperse (text ", ") (map pCost csts))) <+> text ")"
+    pDt dt <> text "(" <> (hcat $ (intersperse (text ", ") (map pCost csts))) <> text ")"
         where pCost = prettyCost pC
 
 

@@ -1,20 +1,19 @@
 -- This file is part of the 'term-rewriting' library-fork. It is licensed under
 -- an MIT license. See the accompanying 'LICENSE' file for details.
 --
--- Authors: Manuel Schneckenreither
+-- Author: Manuel Schneckenreither
 
 {-# LANGUAGE FlexibleContexts#-}
 {-# LANGUAGE CPP #-}
 module Data.Rewriting.Datatype.Parse
-    ( parseDatatype
+    ( recursiveSymbol
+    , parseDatatype
     , parseCtr
     ) where
 
 import Text.Parsec hiding (parse)
-import Data.Rewriting.Term.Type hiding (map)
 import Data.Rewriting.Utils.Parse (lex, par, angleBrackets, ident)
 import Data.Rewriting.Datatype.Type
-import Data.Rewriting.Term.Parse
 import Control.Monad
 import Data.Rewriting.Cost.Type
 import Prelude hiding (lex)
@@ -32,16 +31,14 @@ recursiveSymbol = "X"
 -- contains the words which are prohibited for constructor names (e.g. the
 -- variable names). The parameter @dts@ holds the already known/parsed
 -- data-types.
---
--- TODO: maybe change parseCtrChDt such that it parses any String,
--- and check later on!
 parseDatatype    :: Stream s m Char => [String] ->
                    ParsecT s u m (Datatype String String Int, [String])
 parseDatatype vs = do
-  dt <- lex parseDatatypeName
-  _ <- (char '=' >> spaces)
+  dt <- lex parseDatatypeName <?> "datatype symbol"
+  _ <- (char '=' >> spaces) <?> "="
   r <- (string "µX." <|> string "uX.") <|> return ""
   lst <- angleBrackets ((lex $ parseCtr (not $ null r) vs) `sepBy` (char ',' >> spaces))
+        <?> "constructors defined in between of angle brackets ('<' and '>')"
   let cs = map fst lst
       chk = concatMap snd lst
   return $ (Datatype dt cs, chk)
@@ -49,7 +46,7 @@ parseDatatype vs = do
 
 -- | @parseDatatypeName@ parses a string.
 parseDatatypeName :: Stream s m Char => ParsecT s u m String
-parseDatatypeName = ident "" []
+parseDatatypeName = ident "(,)" []
 
 
 -- | @parseCtr isRec vs@ is a parser for constructors similar to the conventions
@@ -116,7 +113,8 @@ parseCtrChDt = do
   -- dt <- choice $ map string dts
 
   -- This would need something like foldl for parsec, which does not exits.
-  -- Therefore, this check will be done later on. Therefore returning a tuple.
+  -- Therefore, this check will be done later on. This is the reason for
+  -- returning a tuple with the datatype string.
 
   dt <- ident "()," []
   c <- par parseCtrChCostDt <|> return []

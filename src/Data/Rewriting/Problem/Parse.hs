@@ -23,7 +23,7 @@ import Data.Rewriting.Rule (Rule (..))
 import qualified Data.Rewriting.Term as Term
 import qualified Data.Rewriting.Rules as Rules
 import qualified Data.Rewriting.Datatype.Type as Dt
-import Data.Rewriting.Datatype.Parse (parseDatatype)
+import Data.Rewriting.Datatype.Parse (parseDatatype, recursiveSymbol)
 import Data.Rewriting.Datatype.Type (Datatype (..))
 
 
@@ -97,7 +97,7 @@ parsedVariables = Prob.variables `liftM` getState
 
 parse :: (Stream s (Either ProblemParseError) Char) => WSTParser s (Problem String String String String Int)
 parse = spaces >> parseDecls >> eof >> getState where
-  parseDecls = many1 parseDecl
+  parseDecls = many1 (par parseDecl)
   parseDecl =  decl "VAR"       vars       (\ e p -> p {Prob.variables = e `union` Prob.variables p})
            <|> decl "THEORY"    theory     (\ e p -> p {Prob.theory = maybeAppend Prob.theory e p})
            <|> decl "RULES"     rules      (\ e p -> p {Prob.rules   = e, --FIXME multiple RULES blocks?
@@ -105,16 +105,24 @@ parse = spaces >> parseDecls >> eof >> getState where
            <|> decl "STRATEGY"  strategy   (\ e p -> p {Prob.strategy = e})
            <|> decl "DATATYPES"  datatypes    (\ e p -> p {Prob.datatypes = maybeAppend Prob.datatypes e p})
            <|> decl "STARTTERM" startterms (\ e p -> p {Prob.startTerms = e})
-           -- <|> (par comment >>= modifyProblem . (\ e p -> p {Prob.comment = maybeAppend Prob.comment e p}) <?> "comment")
-  decl name p f = try (par $ do
-      lex $ string name
-      r <- p
-      modifyProblem $ f r) <?> (name ++ " block")
+           <|> (comment >>= modifyProblem . (\ e p -> p {Prob.comment = maybeAppend Prob.comment e p}) <?> "comment")
+
+  decl name p f =
+  -- Note: A try here, inhibits useful error messages!
+
+  -- BUG: Furthermore it results in throwing everything which is not properly
+  -- parsed to the comment section, if it is not a required block! This may be a
+  -- bug and could easily cause one to overlook parse errors. FIX: put 'par' up
+  -- to line 100 (many1 (par parseDecl)) and the rest as follows:
+      do _ <- try (lex $ string name)
+         r <- p <?> "Error parsing " ++ name ++ " block"
+         modifyProblem $ f r
+
   maybeAppend fld e p = Just $ maybe [] id (fld p) ++ e
 
+
 vars :: (Stream s (Either ProblemParseError) Char) => WSTParser s [String]
-vars = do vs <- many (lex $ ident "()," [])
-          return vs
+vars = many (lex $ ident "()," [])
 
 
 theory :: (Stream s (Either ProblemParseError) Char) => WSTParser s [Prob.Theory String String]
@@ -136,21 +144,22 @@ theory = many thdecl where
 datatypes :: (Stream s (Either ProblemParseError) Char) =>
                WSTParser s [Dt.Datatype String String Int]
 datatypes = do vs <- parsedVariables
-               lst <- many (try (spaces >> parseDatatype vs))
+               lst <- many (spaces >> parseDatatype vs)
                let dts = map fst lst
                    chk = concatMap snd lst
-               when (checkDts chk dts)
-                    (undefined)
-               return dts
-
+               force <- checkDts chk dts
+               when (or force)
+                    (fail $ "Datatype problem detected.") -- not gonna get thrown!
+               return dts <?> "Datatypes"
     where
-      checkDts          :: (Eq a, Show a) => [a] -> [Datatype a b c] -> Bool
-      checkDts str dts' = any (\x -> if x `elem` dtsStr
-                                    then False
-                                    else error $ "Datatype " ++ show x ++ "not defined"
-                              ) (str)
-          where
-            dtsStr = map datatype dts'
+      checkDts :: Monad m => [String] -> [Datatype String cn c] -> m [Bool]
+      checkDts str dts' = mapM (\x -> do
+                                 when (x `notElem` dtsStr && x /= recursiveSymbol)
+                                          (fail $ "ERROR: Datatype " ++ show x ++
+                                           " not defined but used in constructor!")
+                                 return False;
+                              ) str
+          where dtsStr = map datatype dts'
 
 
 rules :: (Stream s (Either ProblemParseError) Char) => WSTParser s (Prob.RulesPair String String)
