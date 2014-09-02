@@ -33,7 +33,7 @@ data Theory f v = SymbolProperty String [f]
 data Problem f v dt cn ct = Problem { startTerms :: StartTerms
                              , strategy          :: Strategy
                              , theory            :: Maybe [Theory f v]
-                             , datatypes         :: [Datatype dt cn ct]
+                             , datatypes         :: Maybe [Datatype dt cn ct]
                              , rules             :: RulesPair f v
                              , variables         :: [v]
                              , symbols           :: [f]

@@ -66,8 +66,8 @@ fromFile file = fromFile' `catch` (return . Left . FileReadError) where
 fromString :: String -> Either ProblemParseError (Problem String String String String Int)
 fromString = fromCharStream "supplied string"
 
-fromCharStream :: (Stream s (Either ProblemParseError) Char)
-                   => SourceName -> s -> Either ProblemParseError (Problem String String String String Int)
+fromCharStream :: (Stream s (Either ProblemParseError) Char) => SourceName -> s
+               -> Either ProblemParseError (Problem String String String String Int)
 fromCharStream sourcename input =
   case runParserT parse initialState sourcename input of
     Right (Left e)  -> Left $ SomeParseError e
@@ -76,7 +76,7 @@ fromCharStream sourcename input =
   where initialState = Prob.Problem { Prob.startTerms = Prob.AllTerms ,
                                       Prob.strategy   = Prob.Full ,
                                       Prob.theory     = Nothing ,
-                                      Prob.datatypes = [],
+                                      Prob.datatypes  = Nothing,
                                       Prob.rules      = Prob.RulesPair { Prob.strictRules = [],
                                                                          Prob.weakRules = [] } ,
                                       Prob.variables  = [] ,
@@ -103,7 +103,7 @@ parse = spaces >> parseDecls >> eof >> getState where
            <|> decl "RULES"     rules      (\ e p -> p {Prob.rules   = e, --FIXME multiple RULES blocks?
                                                         Prob.symbols = Rules.funsDL (Prob.allRules e) [] })
            <|> decl "STRATEGY"  strategy   (\ e p -> p {Prob.strategy = e})
-           <|> decl "CONSTR"  datatypes   (\ e p -> p {Prob.datatypes = e `union` Prob.datatypes p})
+           <|> decl "DATATYPES"  datatypes    (\ e p -> p {Prob.datatypes = maybeAppend Prob.datatypes e p})
            <|> decl "STARTTERM" startterms (\ e p -> p {Prob.startTerms = e})
            -- <|> (par comment >>= modifyProblem . (\ e p -> p {Prob.comment = maybeAppend Prob.comment e p}) <?> "comment")
   decl name p f = try (par $ do
@@ -136,7 +136,7 @@ theory = many thdecl where
 datatypes :: (Stream s (Either ProblemParseError) Char) =>
                WSTParser s [Dt.Datatype String String Int]
 datatypes = do vs <- parsedVariables
-               lst <- many (spaces >> parseDatatype vs)
+               lst <- many (try (spaces >> parseDatatype vs))
                let dts = map fst lst
                    chk = concatMap snd lst
                when (checkDts chk dts)
@@ -144,7 +144,6 @@ datatypes = do vs <- parsedVariables
                return dts
 
     where
-
       checkDts          :: (Eq a, Show a) => [a] -> [Datatype a b c] -> Bool
       checkDts str dts' = any (\x -> if x `elem` dtsStr
                                     then False

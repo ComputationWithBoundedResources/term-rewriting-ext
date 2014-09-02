@@ -4,6 +4,7 @@
 -- Authors: Manuel Schneckenreither
 
 {-# LANGUAGE FlexibleContexts#-}
+{-# LANGUAGE CPP #-}
 module Data.Rewriting.Datatype.Parse
     ( parseDatatype
     , parseCtr
@@ -17,6 +18,10 @@ import Data.Rewriting.Term.Parse
 import Control.Monad
 import Data.Rewriting.Cost.Type
 import Prelude hiding (lex)
+
+#ifdef DEBUG
+import Debug.Trace (trace)
+#endif
 
 recursiveSymbol :: String
 recursiveSymbol = "X"
@@ -67,7 +72,7 @@ parseCtr isRec vs = do
        `sepBy1` (spaces >> lex (char ','))) <|> return []
   let ch = map fst lst
       chk = map snd lst
-  c <-  (char ':' >> parseCost) <|> return CostEmpty
+  c <- (char ':' >> parseCost) <|> return CostEmpty
   return $ (Constructor n ch c, chk)
 
 

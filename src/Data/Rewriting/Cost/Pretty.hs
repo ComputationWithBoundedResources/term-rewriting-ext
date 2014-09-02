@@ -11,12 +11,12 @@ import           Data.Rewriting.Cost.Type
 import           Text.PrettyPrint.ANSI.Leijen
 
 
-prettyCost :: (Pretty c) => Cost c -> Doc
-prettyCost (CostEmpty) = empty
-prettyCost (Cost c)    = pretty c
+prettyCost               :: (c -> Doc) -> Cost c -> Doc
+prettyCost _ (CostEmpty) = empty
+prettyCost pC (Cost c)   = pC c
 
 
 instance (Pretty c) => Pretty (Cost c) where
-    pretty = prettyCost
+    pretty = prettyCost pretty
 
 

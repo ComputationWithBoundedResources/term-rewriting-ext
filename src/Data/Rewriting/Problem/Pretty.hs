@@ -9,26 +9,31 @@ module Data.Rewriting.Problem.Pretty (
     prettyWST',
 ) where
 
-import           Data.List                    (nub)
-import           Data.Maybe                   (fromJust, isJust)
+import           Data.List                      (nub)
+import           Data.Maybe                     (fromJust, isJust)
+import           Data.Rewriting.Datatype.Pretty (prettyDatatype)
 import           Data.Rewriting.Problem.Type
-import           Data.Rewriting.Rule          (prettyRule)
+import           Data.Rewriting.Rule            (prettyRule)
 import           Text.PrettyPrint.ANSI.Leijen
+
 
 printWhen :: Bool -> Doc -> Doc
 printWhen False _ = empty
 printWhen True  p = p
 
 
-prettyWST' :: (Pretty f, Pretty v) => Problem f v -> Doc
-prettyWST' = prettyWST pretty pretty
+prettyWST' :: (Pretty f, Pretty v, Pretty dt, Pretty cn, Pretty c) =>
+             Problem f v dt cn c -> Doc
+prettyWST' = prettyWST pretty pretty pretty pretty pretty
 
-prettyWST :: (f -> Doc) -> (v -> Doc) -> Problem f v -> Doc
-prettyWST fun var prob =
+prettyWST :: (f -> Doc) -> (v -> Doc) -> (dt -> Doc) -> (cn -> Doc) -> (c -> Doc) ->
+            Problem f v dt cn c -> Doc
+prettyWST fun var pDt pCtr pCst prob =
     printWhen (sterms /= AllTerms) (block "STARTTERM" $ text "CONSTRUCTOR-BASED")
     <$$> printWhen (strat /= Full) (block "STRATEGY" $ ppStrat strat)
     <$$> maybeblock "THEORY" theory ppTheories
     <$$> block "VAR" (ppVars $ variables prob)
+    <$$> maybeblock "DATATYPES" datatypes ppDatatypes
     <$$> block "RULES" (ppRules $ rules prob)
     <$$> maybeblock "COMMENT" comment text
 
@@ -51,17 +56,21 @@ prettyWST fun var prob =
 
         ppRule sep = prettyRule (text sep) fun var
 
+        ppDatatypes dts = align $ vcat [ ppDatatype "=" dt | dt <- dts ]
+
+        ppDatatype sep = prettyDatatype (text sep) pDt pCtr pCst
+
         sterms = startTerms prob
         strat  = strategy prob
         thry   = theory prob
 
 
-prettyProblem :: (Eq f, Eq v) => (f -> Doc) -> (v -> Doc) -> (dt -> Doc) ->
+prettyProblem :: (Eq f, Eq v, Eq dt, Eq cn, Eq c) => (f -> Doc) -> (v -> Doc) -> (dt -> Doc) ->
                 (cn -> Doc) -> (c -> Doc) -> Problem f v dt cn c -> Doc
 prettyProblem fun var dt cn cst prob =  block "Start-Terms" (ppST `on` startTerms)
                                         <$$> block "Strategy" (ppStrat `on` strategy)
                                         <$$> block "Variables" (ppVars `on` variables)
-                                        <$$> block "Datatypes" (ppDts `on` datatypes)
+                                        <$$> maybeblock "Data-Types" ppDts datatypes
                                         <$$> block "Function Symbols" (ppSyms `on` symbols)
                                         <$$> maybeblock "Theory" ppTheories theory
                                         <$$> block "Rules" (ppRules `on` rules)
@@ -71,13 +80,13 @@ prettyProblem fun var dt cn cst prob =  block "Start-Terms" (ppST `on` startTerm
   maybeblock n pp f = printWhen (isJust `on` f) (block n (pp `on` (fromJust . f)))
   commalist  = fillSep . punctuate (text ",")
 
+
   ppST AllTerms      = text "all"
   ppST BasicTerms    = text "basic terms"
   ppStrat Innermost  = text "innermost"
   ppStrat Outermost  = text "outermost"
   ppStrat Full       = text "full rewriting"
   ppVars vars        = commalist $ [var v | v <- nub vars]
-  ppDts              = prettyDatatype
   ppSyms syms        = commalist $ [fun v | v <- nub syms]
   ppComment c        = text c
   ppTheories ths     =  align $ vcat [ ppTheory th | th <- ths ] where
@@ -87,7 +96,10 @@ prettyProblem fun var dt cn cst prob =  block "Start-Terms" (ppST `on` startTerm
                        [ppRule "->" r | r <- strictRules rp]
                        ++ [ppRule "->=" r | r <- weakRules rp]
   ppRule sep         = prettyRule (text sep) fun var
+  ppDts dts          = align $ vcat $ [ppDt "=" dt | dt <- dts]
+  ppDt sep           = prettyDatatype (text sep) dt cn cst
 
-instance (Eq f, Eq v, Pretty f, Pretty v, Pretty dt, Pretty cn, Pretty c) =>
+
+instance (Eq f, Eq v, Eq dt, Eq cn, Eq c, Pretty f, Pretty v, Pretty dt, Pretty cn, Pretty c) =>
     Pretty (Problem f v dt cn c) where
-  pretty = prettyProblem pretty pretty
+  pretty = prettyProblem pretty pretty pretty pretty pretty
