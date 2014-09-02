@@ -1,7 +1,7 @@
 -- This file is part of the 'term-rewriting' library. It is licensed
 -- under an MIT license. See the accompanying 'LICENSE' file for details.
 --
--- Authors: Martin Avanzini
+-- Authors: Martin Avanzini, Manuel Schneckenreither
 
 module Data.Rewriting.Problem.Pretty (
     prettyProblem,
@@ -9,11 +9,11 @@ module Data.Rewriting.Problem.Pretty (
     prettyWST',
 ) where
 
-import Data.Maybe (isJust, fromJust)
-import Data.List (nub)
-import Data.Rewriting.Problem.Type
-import Data.Rewriting.Rule (prettyRule)
-import Text.PrettyPrint.ANSI.Leijen
+import           Data.List                    (nub)
+import           Data.Maybe                   (fromJust, isJust)
+import           Data.Rewriting.Problem.Type
+import           Data.Rewriting.Rule          (prettyRule)
+import           Text.PrettyPrint.ANSI.Leijen
 
 printWhen :: Bool -> Doc -> Doc
 printWhen False _ = empty
@@ -56,14 +56,16 @@ prettyWST fun var prob =
         thry   = theory prob
 
 
-prettyProblem :: (Eq f, Eq v) => (f -> Doc) -> (v -> Doc) -> Problem f v -> Doc
-prettyProblem fun var prob =  block "Start-Terms" (ppST `on` startTerms)
-                              <$$> block "Strategy" (ppStrat `on` strategy)
-                              <$$> block "Variables" (ppVars `on` variables)
-                              <$$> block "Function Symbols" (ppSyms `on` symbols)
-                              <$$> maybeblock "Theory" ppTheories theory
-                              <$$> block "Rules" (ppRules `on` rules)
-                              <$$> maybeblock "Comment" ppComment comment where
+prettyProblem :: (Eq f, Eq v) => (f -> Doc) -> (v -> Doc) -> (dt -> Doc) ->
+                (cn -> Doc) -> (c -> Doc) -> Problem f v dt cn c -> Doc
+prettyProblem fun var dt cn cst prob =  block "Start-Terms" (ppST `on` startTerms)
+                                        <$$> block "Strategy" (ppStrat `on` strategy)
+                                        <$$> block "Variables" (ppVars `on` variables)
+                                        <$$> block "Datatypes" (ppDts `on` datatypes)
+                                        <$$> block "Function Symbols" (ppSyms `on` symbols)
+                                        <$$> maybeblock "Theory" ppTheories theory
+                                        <$$> block "Rules" (ppRules `on` rules)
+                                        <$$> maybeblock "Comment" ppComment comment where
   pp `on` fld = pp $ fld prob
   block n pp = hang 3 $ (underline $ text $ n ++ ":") <+> pp
   maybeblock n pp f = printWhen (isJust `on` f) (block n (pp `on` (fromJust . f)))
@@ -75,6 +77,7 @@ prettyProblem fun var prob =  block "Start-Terms" (ppST `on` startTerms)
   ppStrat Outermost  = text "outermost"
   ppStrat Full       = text "full rewriting"
   ppVars vars        = commalist $ [var v | v <- nub vars]
+  ppDts              = prettyDatatype
   ppSyms syms        = commalist $ [fun v | v <- nub syms]
   ppComment c        = text c
   ppTheories ths     =  align $ vcat [ ppTheory th | th <- ths ] where
@@ -85,5 +88,6 @@ prettyProblem fun var prob =  block "Start-Terms" (ppST `on` startTerms)
                        ++ [ppRule "->=" r | r <- weakRules rp]
   ppRule sep         = prettyRule (text sep) fun var
 
-instance (Eq f, Eq v, Pretty f, Pretty v) => Pretty (Problem f v) where
+instance (Eq f, Eq v, Pretty f, Pretty v, Pretty dt, Pretty cn, Pretty c) =>
+    Pretty (Problem f v dt cn c) where
   pretty = prettyProblem pretty pretty

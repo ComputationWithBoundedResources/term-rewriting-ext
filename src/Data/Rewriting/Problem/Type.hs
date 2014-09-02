@@ -12,7 +12,9 @@ module Data.Rewriting.Problem.Type (
   allRules
  ) where
 
-import Data.Rewriting.Rule (Rule (..))
+import           Data.Rewriting.Datatype.Type
+import           Data.Rewriting.Rule          (Rule (..))
+
 
 data StartTerms = AllTerms
                 | BasicTerms deriving (Eq, Show)
@@ -28,13 +30,14 @@ data RulesPair f v = RulesPair { strictRules :: [Rule f v]
 data Theory f v = SymbolProperty String [f]
                 | Equations [Rule f v] deriving (Eq, Show)
 
-data Problem f v = Problem { startTerms :: StartTerms
-                           , strategy   :: Strategy
-                           , theory     :: Maybe [Theory f v]
-                           , rules      :: RulesPair f v
-                           , variables  :: [v]
-                           , symbols    :: [f]
-                           , comment    :: Maybe String} deriving (Show)
+data Problem f v dt cn ct = Problem { startTerms :: StartTerms
+                             , strategy          :: Strategy
+                             , theory            :: Maybe [Theory f v]
+                             , datatypes         :: [Datatype dt cn ct]
+                             , rules             :: RulesPair f v
+                             , variables         :: [v]
+                             , symbols           :: [f]
+                             , comment           :: Maybe String} deriving (Show)
 
 allRules :: RulesPair f v -> [Rule f v]
 allRules rp = strictRules rp ++ weakRules rp

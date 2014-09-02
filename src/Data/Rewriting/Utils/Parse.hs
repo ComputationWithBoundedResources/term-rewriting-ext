@@ -7,6 +7,7 @@
 module Data.Rewriting.Utils.Parse (
     lex,
     par,
+    angleBrackets,
     ident
 ) where
 
@@ -22,6 +23,10 @@ lex p = do { x <- p; spaces; return x }
 -- | @par p@ accpets @p@ enclosed in parentheses ('@(@' and '@)@').
 par :: Stream s m Char => ParsecT s u m a -> ParsecT s u m a
 par = between (lex$char '(') (lex$char ')')
+
+-- | @angleBrackets p@ accepts @p@ enclosed in angle brackets ('@<@' and '@>@').
+angleBrackets :: Stream s m Char => ParsecT s u m a -> ParsecT s u m a
+angleBrackets = between (lex$char '<') (lex$char '>')
 
 -- | @ident taboo@ parses a non-empty sequence of non-space characters not
 -- containing elements of @taboo@.
