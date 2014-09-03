@@ -1,14 +1,15 @@
 
 
-module Data.Rewriting.Constructor
-    ( Constructor (..)
+module Data.Rewriting.Datatype
+    ( Datatype (..)
+    , Constructor (..)
+    , ConstructorChild (..)
       -- reexported modules
-    , Data.Rewriting.Constructor.Type
-    , Data.Rewriting.Constructor.Ops
-    , Data.Rewriting.Constructor.Pretty
+    , module Data.Rewriting.Datatype.Pretty
+    , module Data.Rewriting.Datatype.Type
+    , module Data.Rewriting.Datatype.Parse
     ) where
 
-import           Data.Rewriting.Constructor.Ops
-import           Data.Rewriting.Constructor.Pretty
-import           Data.Rewriting.Constructor.Type
-
+import           Data.Rewriting.Datatype.Parse
+import           Data.Rewriting.Datatype.Pretty
+import           Data.Rewriting.Datatype.Type

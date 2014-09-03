@@ -15,8 +15,8 @@ import           Data.Rewriting.Term.Type hiding (fold, map)
 
 
 data Datatype dt cn c = Datatype
-    { datatype :: dt
-    , ctrs     :: [Constructor dt cn c]
+    { datatype     :: dt
+    , constructors :: [Constructor dt cn c]
     } deriving (Show, Eq)
 
 

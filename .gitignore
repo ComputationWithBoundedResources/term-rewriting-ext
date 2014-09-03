@@ -6,3 +6,5 @@
 cabal.config
 cabal.sandbox.config
 /TAGS
+/src/Test.hs
+*TAGS

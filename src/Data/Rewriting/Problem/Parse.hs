@@ -5,7 +5,6 @@
 
 
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE CPP #-}
 module Data.Rewriting.Problem.Parse (
   parseIO,
@@ -16,25 +15,24 @@ module Data.Rewriting.Problem.Parse (
   ProblemParseError (..)
   ) where
 
-import Data.Rewriting.Utils.Parse (lex, par, angleBrackets, ident)
+import Data.Rewriting.Utils.Parse (lex, par, ident)
 import qualified Data.Rewriting.Problem.Type as Prob
 import Data.Rewriting.Problem.Type (Problem)
 import Data.Rewriting.Rule (Rule (..))
 import qualified Data.Rewriting.Term as Term
 import qualified Data.Rewriting.Rules as Rules
-import qualified Data.Rewriting.Datatype.Type as Dt
-import Data.Rewriting.Datatype.Parse (parseDatatype, recursiveSymbol)
-import Data.Rewriting.Datatype.Type (Datatype (..))
-
+import qualified Data.Rewriting.Datatype as Dt (parse, recursiveSymbol)
+import Data.Rewriting.Datatype.Type (Datatype (datatype, constructors), Constructor (..))
+import qualified Data.Rewriting.Signature as Sig
 
 import Data.List (partition, union)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, fromJust)
 import Prelude hiding (lex, catch)
 import Control.Exception (catch)
 import Control.Monad.Error
 import Control.Monad (liftM, liftM3)
 import Text.Parsec hiding (parse)
-import System.IO (readFile)
+
 #ifdef DEBUG
 import Debug.Trace (trace)
 #endif
@@ -77,6 +75,7 @@ fromCharStream sourcename input =
                                       Prob.strategy   = Prob.Full ,
                                       Prob.theory     = Nothing ,
                                       Prob.datatypes  = Nothing,
+                                      Prob.signatures = Nothing,
                                       Prob.rules      = Prob.RulesPair { Prob.strictRules = [],
                                                                          Prob.weakRules = [] } ,
                                       Prob.variables  = [] ,
@@ -95,16 +94,22 @@ modifyProblem = modifyState
 parsedVariables :: WSTParser s [String]
 parsedVariables = Prob.variables `liftM` getState
 
+parsedDatatypes :: ParsecT s (Problem f v dt cn ct) (Either ProblemParseError)
+                  (Maybe [Datatype dt cn ct])
+parsedDatatypes = Prob.datatypes `liftM` getState
+
+
 parse :: (Stream s (Either ProblemParseError) Char) => WSTParser s (Problem String String String String Int)
 parse = spaces >> parseDecls >> eof >> getState where
   parseDecls = many1 (par parseDecl)
-  parseDecl =  decl "VAR"       vars       (\ e p -> p {Prob.variables = e `union` Prob.variables p})
-           <|> decl "THEORY"    theory     (\ e p -> p {Prob.theory = maybeAppend Prob.theory e p})
-           <|> decl "RULES"     rules      (\ e p -> p {Prob.rules   = e, --FIXME multiple RULES blocks?
-                                                        Prob.symbols = Rules.funsDL (Prob.allRules e) [] })
-           <|> decl "STRATEGY"  strategy   (\ e p -> p {Prob.strategy = e})
-           <|> decl "DATATYPES"  datatypes    (\ e p -> p {Prob.datatypes = maybeAppend Prob.datatypes e p})
-           <|> decl "STARTTERM" startterms (\ e p -> p {Prob.startTerms = e})
+  parseDecl =  decl "VAR"        vars        (\ e p -> p {Prob.variables = e `union` Prob.variables p})
+           <|> decl "THEORY"     theory      (\ e p -> p {Prob.theory = maybeAppend Prob.theory e p})
+           <|> decl "RULES"      rules       (\ e p -> p {Prob.rules   = e, --FIXME multiple RULES blocks?
+                                                          Prob.symbols = Rules.funsDL (Prob.allRules e) [] })
+           <|> decl "STRATEGY"   strategy    (\ e p -> p {Prob.strategy = e})
+           <|> decl "STARTTERM"  startterms  (\ e p -> p {Prob.startTerms = e})
+           <|> decl "DATATYPES"  datatypes   (\ e p -> p {Prob.datatypes = maybeAppend Prob.datatypes e p})
+           <|> decl "SIGNATURES" signatures  (\ e p -> p {Prob.signatures = maybeAppend Prob.signatures e p})
            <|> (comment >>= modifyProblem . (\ e p -> p {Prob.comment = maybeAppend Prob.comment e p}) <?> "comment")
 
   decl name p f =
@@ -114,8 +119,8 @@ parse = spaces >> parseDecls >> eof >> getState where
   -- parsed to the comment section, if it is not a required block! This may be a
   -- bug and could easily cause one to overlook parse errors. FIX: put 'par' up
   -- to line 100 (many1 (par parseDecl)) and the rest as follows:
-      do _ <- try (lex $ string name)
-         r <- p <?> "Error parsing " ++ name ++ " block"
+      do _ <- try (lex $ string name >> space)
+         r <- p -- <?> "Error parsing " ++ name ++ " block"
          modifyProblem $ f r
 
   maybeAppend fld e p = Just $ maybe [] id (fld p) ++ e
@@ -142,24 +147,56 @@ theory = many thdecl where
 
 
 datatypes :: (Stream s (Either ProblemParseError) Char) =>
-               WSTParser s [Dt.Datatype String String Int]
+               WSTParser s [Datatype String String Int]
 datatypes = do vs <- parsedVariables
-               lst <- many (spaces >> parseDatatype vs)
+               lst <- many (spaces >> Dt.parse vs)
                let dts = map fst lst
                    chk = concatMap snd lst
-               force <- checkDts chk dts
-               when (or force)
+                   multDecl = checkMultDecl ([],[]) dts
+               when (isJust multDecl)
+                        (fail $ "Error: " ++ fromJust multDecl)
+               ctrDtCheck <- checkCtrDts chk dts -- check data-types used in constructors
+               when (or ctrDtCheck)
                     (fail $ "Datatype problem detected.") -- not gonna get thrown!
                return dts <?> "Datatypes"
     where
-      checkDts :: Monad m => [String] -> [Datatype String cn c] -> m [Bool]
-      checkDts str dts' = mapM (\x -> do
-                                 when (x `notElem` dtsStr && x /= recursiveSymbol)
-                                          (fail $ "ERROR: Datatype " ++ show x ++
-                                           " not defined but used in constructor!")
-                                 return False;
-                              ) str
+      -- check for multiple constructor symbols across all data-types declarations
+      checkMultDecl :: ([String],[String]) -> [Datatype String String Int] -> Maybe String
+      checkMultDecl _ []                   = Nothing
+      checkMultDecl (dtSs, ctrSs) (d:ds)
+          | dtName `elem` dtSs             = Just $ "datatype " ++ dtName ++ " declared more than once."
+          | isJust (multCtrs ctrSs nCtrSs) = multCtrs ctrSs nCtrSs
+          | otherwise                      = checkMultDecl (dtName : dtSs, nCtrSs ++ ctrSs) ds
+          where
+            dtName = datatype d
+            nCtrSs = map (\(Constructor n _ _) -> n) (constructors d)
+
+            -- Check for multiple constructor symbols inside of one data-type declaration
+            multCtrs             :: [String] -> [String] -> Maybe String
+            multCtrs _ []        = Nothing
+            multCtrs ctrNs (n : ns)
+                | n `elem` ctrNs = Just $ "Constructor " ++ n ++ " is defined more than once."
+                | otherwise      = multCtrs (n : ctrNs) ns
+
+      checkCtrDts :: Monad m => [String] -> [Datatype String cn c] -> m [Bool]
+      checkCtrDts str dts' = mapM (\x -> do
+                                     when (x `notElem` dtsStr && x /= Dt.recursiveSymbol)
+                                              (fail $ "ERROR: Datatype " ++ show x ++
+                                               " not defined but used in constructor!")
+                                     return False;
+                                  ) str
           where dtsStr = map datatype dts'
+
+
+signatures :: (Stream s (Either ProblemParseError) Char) => WSTParser s [Sig.Signature String String]
+signatures = do mDts <- parsedDatatypes
+                case mDts of    -- ensure to fail in Parser Monad, not in [] Monad with fromMaybe!
+                  Nothing -> fail $ "expecting non-empty datatypes block (DATATYPES) " ++ --
+                             "before signatures block (SIGNATURES). Ensure that" ++
+                             " DATATYPES is spelled correctly in input file."
+                  Just dts -> do
+                            vs <- parsedVariables
+                            many (spaces >> Sig.parse vs (map datatype dts))
 
 
 rules :: (Stream s (Either ProblemParseError) Char) => WSTParser s (Prob.RulesPair String String)

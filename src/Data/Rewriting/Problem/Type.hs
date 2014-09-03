@@ -12,9 +12,9 @@ module Data.Rewriting.Problem.Type (
   allRules
  ) where
 
-import           Data.Rewriting.Datatype.Type
-import           Data.Rewriting.Rule          (Rule (..))
-
+import           Data.Rewriting.Datatype  (Datatype)
+import           Data.Rewriting.Rule      (Rule (..))
+import           Data.Rewriting.Signature (Signature)
 
 data StartTerms = AllTerms
                 | BasicTerms deriving (Eq, Show)
@@ -34,6 +34,7 @@ data Problem f v dt cn ct = Problem { startTerms :: StartTerms
                              , strategy          :: Strategy
                              , theory            :: Maybe [Theory f v]
                              , datatypes         :: Maybe [Datatype dt cn ct]
+                             , signatures        :: Maybe [Signature f dt]
                              , rules             :: RulesPair f v
                              , variables         :: [v]
                              , symbols           :: [f]

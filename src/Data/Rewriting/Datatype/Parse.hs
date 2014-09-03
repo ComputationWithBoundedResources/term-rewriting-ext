@@ -7,8 +7,9 @@
 {-# LANGUAGE CPP #-}
 module Data.Rewriting.Datatype.Parse
     ( recursiveSymbol
-    , parseDatatype
+    , parse
     , parseCtr
+    , parseDatatypeName
     ) where
 
 import Text.Parsec hiding (parse)
@@ -26,14 +27,14 @@ recursiveSymbol :: String
 recursiveSymbol = "X"
 
 
--- | @parseDatatype vs dts@ parses data-types like 'NAT = µX.< 0:0, s(X) >'
+-- | @parse vs dts@ parses data-types like 'NAT = µX.< 0:0, s(X) >'
 -- returning a @Datatype String String Int@ data structure. The list @vs@
 -- contains the words which are prohibited for constructor names (e.g. the
 -- variable names). The parameter @dts@ holds the already known/parsed
 -- data-types.
-parseDatatype    :: Stream s m Char => [String] ->
-                   ParsecT s u m (Datatype String String Int, [String])
-parseDatatype vs = do
+parse    :: Stream s m Char => [String] ->
+           ParsecT s u m (Datatype String String Int, [String])
+parse vs = do
   dt <- lex parseDatatypeName <?> "datatype symbol"
   _ <- (char '=' >> spaces) <?> "="
   r <- (string "µX." <|> string "uX.") <|> return ""
@@ -65,8 +66,8 @@ parseCtr          :: Stream s m Char => Bool -> [String]
                   -> ParsecT s u m (Constructor String String Int, [String])
 parseCtr isRec vs = do
   n <- parseCtrSymbol vs
-  lst <- (par ((spaces >> (parseCtrChDt <|> parseCtrChRec isRec)))
-       `sepBy1` (spaces >> lex (char ','))) <|> return []
+  lst <- (par ((spaces >> (parseCtrChDt <|> parseCtrChRec isRec))
+       `sepBy1` (spaces >> lex (char ',')))) <|> return []
   let ch = map fst lst
       chk = map snd lst
   c <- (char ':' >> parseCost) <|> return CostEmpty
@@ -77,13 +78,13 @@ parseCtr isRec vs = do
 -- of the ancient ASCII input format for terms of the termination competition:
 -- every @Char@ that is neither a white space (according to 'Data.Char.isSpace')
 -- nor one of '@(@', '@)@', or '@,@', is considered a letter. However, this list
--- of disallowed characters is expanded by adding '@:@' to enable manual
--- constructor cost parsing (e.g. constructor 's(X)' with cost '0' can be
--- specified as s(X):0). Furthermore, a constructor identifier is a non-empty
--- sequence of letters and it is treated as variable iff it is not contained in
--- @vs@ (ought to be the list of variables).
+-- of disallowed characters is expanded by adding '@:@', '@<@' and '@>@' to
+-- enable manual constructor cost parsing (e.g. constructor 's(X)' with cost '0'
+-- can be specified as s(X):0). Furthermore, a constructor identifier is a
+-- non-empty sequence of letters and it is treated as variable iff it is not
+-- contained in @vs@ (ought to be the list of variables).
 parseCtrSymbol :: Stream s m Char => [String] -> ParsecT s u m String
-parseCtrSymbol vs = ident ":()," vs <?> "constructor symbol"
+parseCtrSymbol vs = ident ":(),<>" vs <?> "constructor symbol"
 
 -- | @parseCost@ parses an int.
 parseCost :: Stream s m Char => ParsecT s u m (Cost Int)
@@ -110,7 +111,7 @@ parseCtrChRec isRec = if isRec then string recursiveSymbol >> return (Constructo
 parseCtrChDt :: Stream s m Char =>
                ParsecT s u m (ConstructorChild String Int, String)
 parseCtrChDt = do
-  -- dt <- choice $ map string dts
+  -- dt <- choice $ map string dts -- where dts are the already parsed data-types
 
   -- This would need something like foldl for parsec, which does not exits.
   -- Therefore, this check will be done later on. This is the reason for

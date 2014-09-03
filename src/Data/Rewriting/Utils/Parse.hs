@@ -1,15 +1,16 @@
 -- This file is part of the 'term-rewriting' library. It is licensed
 -- under an MIT license. See the accompanying 'LICENSE' file for details.
 --
--- Authors: Christian Sternagel
+-- Authors: Christian Sternagel, Manuel Schneckenreither
 
 {-# LANGUAGE FlexibleContexts#-}
-module Data.Rewriting.Utils.Parse (
-    lex,
-    par,
-    angleBrackets,
-    ident
-) where
+module Data.Rewriting.Utils.Parse
+    ( lex,
+      par,
+      ident,
+      angleBrackets,
+      boxBrackets,
+    ) where
 
 import Control.Monad
 import Prelude hiding (lex)
@@ -27,6 +28,11 @@ par = between (lex$char '(') (lex$char ')')
 -- | @angleBrackets p@ accepts @p@ enclosed in angle brackets ('@<@' and '@>@').
 angleBrackets :: Stream s m Char => ParsecT s u m a -> ParsecT s u m a
 angleBrackets = between (lex $ char '<') (lex $ char '>')
+
+
+-- | @angleBrackets p@ accepts @p@ enclosed in angle brackets ('@<@' and '@>@').
+boxBrackets :: Stream s m Char => ParsecT s u m a -> ParsecT s u m a
+boxBrackets = between (lex $ char '[') (lex $ char ']')
 
 -- | @ident taboo@ parses a non-empty sequence of non-space characters not
 -- containing elements of @taboo@.
