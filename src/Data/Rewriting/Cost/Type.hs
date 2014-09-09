@@ -8,5 +8,7 @@ module Data.Rewriting.Cost.Type
     ) where
 
 
-data Cost a = CostEmpty | Cost a
+data Cost a = CostEmpty      -- ^ for unkown costs
+            | Cost a         -- ^ for known costs
+            | CostVar String -- ^ for variable costs
             deriving (Show, Eq)

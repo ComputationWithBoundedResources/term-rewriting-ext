@@ -45,9 +45,10 @@ parse vs = do
   return $ (Datatype dt cs, chk)
 
 
--- | @parseDatatypeName@ parses a string.
+-- | @parseDatatypeName@ parses a string, without any character in '@(,)[]@',
+-- nor the strings '@->@' and '@::@', nor the recursive symbol.
 parseDatatypeName :: Stream s m Char => ParsecT s u m String
-parseDatatypeName = ident "(,)" []
+parseDatatypeName = ident "(,)[]" ["->", "::"]
 
 
 -- | @parseCtr isRec vs@ is a parser for constructors similar to the conventions
@@ -66,10 +67,10 @@ parseCtr          :: Stream s m Char => Bool -> [String]
                   -> ParsecT s u m (Constructor String String Int, [String])
 parseCtr isRec vs = do
   n <- parseCtrSymbol vs
-  lst <- (par ((spaces >> (parseCtrChDt <|> parseCtrChRec isRec))
+  lst <- (par ((spaces >> (parseCtrChRec isRec <|> parseCtrChDt ))
        `sepBy1` (spaces >> lex (char ',')))) <|> return []
   let ch = map fst lst
-      chk = map snd lst
+      chk = filter (not . null) (map snd lst)
   c <- (char ':' >> parseCost) <|> return CostEmpty
   return $ (Constructor n ch c, chk)
 
@@ -101,8 +102,9 @@ parseCtrChCostDt = (spaces >> parseCost) `sepBy1` (spaces >> lex (char ','))
 -- data-types.
 parseCtrChRec       :: Stream s m Char =>
                       Bool -> ParsecT s u m (ConstructorChild String Int, String)
-parseCtrChRec isRec = if isRec then string recursiveSymbol >> return (ConstructorRecursive, [])
-                      else fail "constructor no recursive (µX.<...>)"
+parseCtrChRec isRec = if isRec
+                          then string recursiveSymbol >> return (ConstructorRecursive, [])
+                          else fail "data-type not declared as recursive (µX.< ... >)"
 
 
 -- | @parseCtrDt dts@ parses a @Constructor String@ where the argument @dts@
@@ -117,7 +119,7 @@ parseCtrChDt = do
   -- Therefore, this check will be done later on. This is the reason for
   -- returning a tuple with the datatype string.
 
-  dt <- ident "()," []
+  dt <- ident "()," [recursiveSymbol]
   c <- par parseCtrChCostDt <|> return []
   return $ (ConstructorDatatype dt c, dt)
 

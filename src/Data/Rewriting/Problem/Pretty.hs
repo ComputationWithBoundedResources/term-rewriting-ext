@@ -18,21 +18,26 @@ import           Data.Rewriting.Signature     (prettySignature)
 import           Text.PrettyPrint.ANSI.Leijen
 
 
+printWhen' :: Bool -> Doc -> (Doc -> Doc)
+printWhen' False _ = (empty <>)
+printWhen' True  p = (p <$$> )
+infixr 5 `printWhen'`
+
 printWhen :: Bool -> Doc -> Doc
 printWhen False _ = empty
 printWhen True  p = p
 
 
-prettyWST' :: (Pretty f, Pretty v, Pretty dt, Pretty cn, Pretty c) =>
-             Problem f v dt cn c -> Doc
-prettyWST' = prettyWST pretty pretty pretty pretty pretty
+prettyWST' :: (Pretty f, Pretty v, Pretty s, Pretty dt, Pretty cn, Pretty c) =>
+             Problem f v s dt cn c -> Doc
+prettyWST' = prettyWST pretty pretty pretty pretty pretty pretty
 
-prettyWST :: (f -> Doc) -> (v -> Doc) -> (dt -> Doc) -> (cn -> Doc) -> (c -> Doc) ->
-            Problem f v dt cn c -> Doc
-prettyWST fun var dt ctr cst prob =
-    printWhen (sterms /= AllTerms) (block "STARTTERM" $ text "CONSTRUCTOR-BASED")
-    <$$> printWhen (strat /= Full) (block "STRATEGY" $ ppStrat strat)
-    <$$> maybeblock "THEORY" theory ppTheories
+prettyWST :: (f -> Doc) -> (v -> Doc) -> (s -> Doc) -> (dt -> Doc) -> (cn -> Doc) -> (c -> Doc) ->
+            Problem f v s dt cn c -> Doc
+prettyWST fun var sign dt ctr cst prob =
+    printWhen' (sterms /= AllTerms) (block "STARTTERM" $ text "CONSTRUCTOR-BASED")
+    $ printWhen' (strat /= Full) (block "STRATEGY" $ ppStrat strat)
+    $ maybeblock "THEORY" theory ppTheories
     <$$> block "VAR" (ppVars $ variables prob)
     <$$> maybeblock "DATATYPES" datatypes ppDatatypes
     <$$> maybeblock "SIGNATURES" signatures ppSigs
@@ -62,7 +67,7 @@ prettyWST fun var dt ctr cst prob =
         ppDatatype sep = prettyDatatype (text sep) dt ctr cst
 
         ppSigs sigs        = align $ vcat $ [ppSig "::"  "->" sig | sig <- sigs ]
-        ppSig sep0 sep1    = prettySignature (text sep0) (text sep1) fun dt
+        ppSig sep0 sep1    = prettySignature (text sep0) (text sep1) sign dt
 
 
         sterms = startTerms prob
@@ -70,17 +75,17 @@ prettyWST fun var dt ctr cst prob =
         thry   = theory prob
 
 
-prettyProblem :: (Eq f, Eq v, Eq dt, Eq cn, Eq c) => (f -> Doc) -> (v -> Doc) -> (dt -> Doc) ->
-                (cn -> Doc) -> (c -> Doc) -> Problem f v dt cn c -> Doc
-prettyProblem fun var dt cn cst prob =  block "Start-Terms" (ppST `on` startTerms)
-                                        <$$> block "Strategy" (ppStrat `on` strategy)
-                                        <$$> block "Variables" (ppVars `on` variables)
-                                        <$$> maybeblock "Data-Types" ppDts datatypes
-                                        <$$> maybeblock "Signatures" ppSigs signatures
-                                        <$$> block "Function Symbols" (ppSyms `on` symbols)
-                                        <$$> maybeblock "Theory" ppTheories theory
-                                        <$$> block "Rules" (ppRules `on` rules)
-                                        <$$> maybeblock "Comment" ppComment comment where
+prettyProblem :: (Eq f, Eq v, Eq s, Eq dt, Eq cn, Eq c) => (f -> Doc) -> (v -> Doc) -> (s -> Doc) ->
+                (dt -> Doc) -> (cn -> Doc) -> (c -> Doc) -> Problem f v s dt cn c -> Doc
+prettyProblem fun var sign dt cn cst prob =  block "Start-Terms" (ppST `on` startTerms)
+                                             <$$> block "Strategy" (ppStrat `on` strategy)
+                                             <$$> block "Variables" (ppVars `on` variables)
+                                             <$$> maybeblock "Data-Types" ppDts datatypes
+                                             <$$> maybeblock "Signatures" ppSigs signatures
+                                             <$$> block "Function Symbols" (ppSyms `on` symbols)
+                                             <$$> maybeblock "Theory" ppTheories theory
+                                             <$$> block "Rules" (ppRules `on` rules)
+                                             <$$> maybeblock "Comment" ppComment comment where
   pp `on` fld = pp $ fld prob
   block n pp = hang 3 $ (underline $ text $ n ++ ":") <+> pp
   maybeblock n pp f = printWhen (isJust `on` f) (block n (pp `on` (fromJust . f)))
@@ -105,8 +110,8 @@ prettyProblem fun var dt cn cst prob =  block "Start-Terms" (ppST `on` startTerm
   ppDts dts          = align $ vcat $ [ppDt "=" dt | dt <- dts]
   ppDt sep           = prettyDatatype (text sep) dt cn cst
   ppSigs sigs        = align $ vcat $ [ppSig "::" "->" sig | sig <- sigs ]
-  ppSig sep0 sep1    = prettySignature (text sep0) (text sep1) fun dt
+  ppSig sep0 sep1    = prettySignature (text sep0) (text sep1) sign dt
 
-instance (Eq f, Eq v, Eq dt, Eq cn, Eq c, Pretty f, Pretty v, Pretty dt, Pretty cn, Pretty c) =>
-    Pretty (Problem f v dt cn c) where
-  pretty = prettyProblem pretty pretty pretty pretty pretty
+instance (Eq f, Eq v, Eq s, Eq dt, Eq cn, Eq c, Pretty f, Pretty v, Pretty s,
+          Pretty dt, Pretty cn, Pretty c) => Pretty (Problem f v s dt cn c) where
+  pretty = prettyProblem pretty pretty pretty pretty pretty pretty

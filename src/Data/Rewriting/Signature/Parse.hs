@@ -26,9 +26,10 @@ parse        :: Stream s m Char => [String] -> [String] -> ParsecT s u m (Signat
 parse vs dts = do
   n <- parseRuleRootSym vs
   _ <- spaces >> string "::" >> spaces
-  lhs <- boxBrackets (parseSigLhs dts)  <|> parseSigLhs dts <|> return []
-  _ <- spaces >> string "->" >> spaces
-  rhs <- parseSigRhs dts <?> "rhs of signature"
+  lhs <- boxBrackets (spaces >> (lex $ parseSigLhs dts))  <|> parseSigLhs dts <|> return []
+  sw <- (spaces >> string "->") <|> return []
+  if null sw && length lhs == 1 then return $ Signature n [] (head lhs) else do
+  rhs <- spaces >> parseSigRhs dts
   _ <- spaces
   return $ Signature n lhs rhs
 
@@ -50,7 +51,8 @@ parseSigRhs dts = checkDts dts parseDatatypeName
 -- throws an error using @fail@.
 checkDts       :: Monad m => [String] -> m String -> m String
 checkDts dts p = p >>= (\x -> if x `elem` dts then return x
-                             else fail $ "expecting any of (case sensitive): "
-                                      ++ concat (intersperse ", " dts))
+                             else fail $ "expecting [] for no parameters or " ++
+                                  "any of (case sensitive): "
+                                  ++ concat (intersperse ", " dts))
 
 

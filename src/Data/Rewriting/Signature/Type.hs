@@ -9,8 +9,8 @@ module Data.Rewriting.Signature.Type
     ) where
 
 
-data Signature f dt = Signature
-    { lhsRootSym :: f
+data Signature s dt = Signature
+    { lhsRootSym :: s
     , lhsSig     :: [dt]
     , rhsSig     :: dt
     } deriving (Show, Eq)

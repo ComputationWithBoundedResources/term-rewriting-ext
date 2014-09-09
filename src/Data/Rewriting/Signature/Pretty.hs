@@ -15,11 +15,11 @@ import           Text.PrettyPrint.ANSI.Leijen
 import           Data.List                     (intersperse)
 
 
-prettySignature :: Doc -> Doc -> (f -> Doc) -> (dt -> Doc) -> Signature f dt -> Doc
+prettySignature :: Doc -> Doc -> (s -> Doc) -> (dt -> Doc) -> Signature s dt -> Doc
 prettySignature arr0 arr1 pF pDt (Signature r lhs rhs) =
     hang 2 $ pF r <+> arr0 <+> pLhs <+> arr1 <+> pDt rhs
         where
           pLhs = text "[" <> (hcat $ (intersperse (text " x ")) (map pDt lhs)) <> text "]"
 
-instance (Pretty f, Pretty dt) => Pretty (Signature f dt) where
+instance (Pretty s, Pretty dt) => Pretty (Signature s dt) where
     pretty = prettySignature (text "::") (text "->") pretty pretty

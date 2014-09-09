@@ -20,10 +20,8 @@ import           Text.PrettyPrint.ANSI.Leijen
 prettyDatatype :: Doc -> (dt -> Doc) -> (cn -> Doc) -> (c -> Doc) -> Datatype dt cn c -> Doc
 prettyDatatype arr pDt pCn pC (Datatype dtName cs) =
     hang 2 $ pDt dtName <+> arr <+>
-         (if isRecursive cs
-          then (text "µX.<")
-          else (text "<")) <+>
-         (hcat $ (intersperse (text ", ")) (map pCtr cs)) <+> text ">"
+     (if isRecursive cs then (text "µX.<") else (text "<"))
+     <+> (hcat $ (intersperse (text ", ")) (map pCtr cs)) <+> text ">"
     where
       isRecursive = any (\(Constructor _ ch _) -> any (\ctrCh -> case ctrCh of
                                                                   ConstructorRecursive -> True

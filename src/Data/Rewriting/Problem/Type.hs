@@ -1,7 +1,7 @@
 -- This file is part of the 'term-rewriting' library. It is licensed
 -- under an MIT license. See the accompanying 'LICENSE' file for details.
 --
--- Authors: Martin Avanzini, Christial Sternagel
+-- Authors: Martin Avanzini, Christial Sternagel, Manuel Schneckenreither
 
 module Data.Rewriting.Problem.Type (
   StartTerms (..),
@@ -30,15 +30,19 @@ data RulesPair f v = RulesPair { strictRules :: [Rule f v]
 data Theory f v = SymbolProperty String [f]
                 | Equations [Rule f v] deriving (Eq, Show)
 
-data Problem f v dt cn ct = Problem { startTerms :: StartTerms
-                             , strategy          :: Strategy
-                             , theory            :: Maybe [Theory f v]
-                             , datatypes         :: Maybe [Datatype dt cn ct]
-                             , signatures        :: Maybe [Signature f dt]
-                             , rules             :: RulesPair f v
-                             , variables         :: [v]
-                             , symbols           :: [f]
-                             , comment           :: Maybe String} deriving (Show)
+
+data Problem f v s dt cn ct = Problem
+    { startTerms :: StartTerms
+    , strategy   :: Strategy
+    , theory     :: Maybe [Theory f v]
+    , datatypes  :: Maybe [Datatype dt cn ct]
+    , signatures :: Maybe [Signature s dt]
+    , rules      :: RulesPair f v
+    , variables  :: [v]
+    , symbols    :: [f]
+    , comment    :: Maybe String
+    } deriving (Show)
+
 
 allRules :: RulesPair f v -> [Rule f v]
 allRules rp = strictRules rp ++ weakRules rp
