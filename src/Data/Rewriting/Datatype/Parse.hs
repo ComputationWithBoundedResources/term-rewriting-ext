@@ -16,12 +16,8 @@ import Text.Parsec hiding (parse)
 import Data.Rewriting.Utils.Parse (lex, par, angleBrackets, ident)
 import Data.Rewriting.Datatype.Type
 import Control.Monad
-import Data.Rewriting.Cost.Type
 import Prelude hiding (lex)
 
-#ifdef DEBUG
-import Debug.Trace (trace)
-#endif
 
 recursiveSymbol :: String
 recursiveSymbol = "X"
@@ -33,16 +29,17 @@ recursiveSymbol = "X"
 -- variable names). The parameter @dts@ holds the already known/parsed
 -- data-types.
 parse    :: Stream s m Char => [String] ->
-           ParsecT s u m (Datatype String String Int, [String])
+           ParsecT s u m (Datatype String String, [String])
 parse vs = do
   dt <- lex parseDatatypeName <?> "datatype symbol"
   _ <- (char '=' >> spaces) <?> "="
   r <- (string "µX." <|> string "uX.") <|> return ""
-  lst <- angleBrackets ((lex $ parseCtr (not $ null r) vs) `sepBy` (char ',' >> spaces))
+  _ <- spaces
+  lst <- angleBrackets (lex (parseCtr (not $ null r) vs) `sepBy` (char ',' >> spaces))
         <?> "constructors defined in between of angle brackets ('<' and '>')"
   let cs = map fst lst
       chk = concatMap snd lst
-  return $ (Datatype dt cs, chk)
+  return (Datatype dt cs, chk)
 
 
 -- | @parseDatatypeName@ parses a string, without any character in '@(,)[]@',
@@ -64,15 +61,15 @@ parseDatatypeName = ident "(,)[]" ["->", "::"]
 -- constructor may not be specified (e.g. by just specifying 's(X)'). However,
 -- if costs are specified.
 parseCtr          :: Stream s m Char => Bool -> [String]
-                  -> ParsecT s u m (Constructor String String Int, [String])
+                  -> ParsecT s u m (Constructor String String, [String])
 parseCtr isRec vs = do
   n <- parseCtrSymbol vs
-  lst <- (par ((spaces >> (parseCtrChRec isRec <|> parseCtrChDt ))
-       `sepBy1` (spaces >> lex (char ',')))) <|> return []
+  lst <- par ((spaces >> (parseCtrChRec isRec <|> parseCtrChDt ))
+       `sepBy1` (spaces >> lex (char ','))) <|> return []
   let ch = map fst lst
       chk = filter (not . null) (map snd lst)
-  c <- (char ':' >> parseCost) <|> return CostEmpty
-  return $ (Constructor n ch c, chk)
+  -- c <- (char ':' >> parseCost) <|> return
+  return (Constructor n ch, chk)
 
 
 -- | @parseCtrSymbol vs@ is a parser for constructors similar to the conventions
@@ -88,20 +85,20 @@ parseCtrSymbol :: Stream s m Char => [String] -> ParsecT s u m String
 parseCtrSymbol vs = ident ":(),<>" vs <?> "constructor symbol"
 
 -- | @parseCost@ parses an int.
-parseCost :: Stream s m Char => ParsecT s u m (Cost Int)
-parseCost = many1 digit >>= (\x -> return $ Cost $ read x)
-            <?> "a cost as an integer, like the '0' in s(X):0"
+-- parseCost :: Stream s m Char => ParsecT s u m (Cost Int)
+-- parseCost = many1 digit >>= (\x -> return $ Cost $ read x)
+--             <?> "a cost as an integer, like the '0' in s(X):0"
 
 -- | @parseCtrChCostDt@ parses costs separated by commas (','). It ignores any
 -- whitespaces, which are before the cost, before the comma, or after the comma.
-parseCtrChCostDt :: Stream s m Char => ParsecT s u m [Cost Int]
-parseCtrChCostDt = (spaces >> parseCost) `sepBy1` (spaces >> lex (char ','))
+-- parseCtrChCostDt :: Stream s m Char => ParsecT s u m [Cost Int]
+-- parseCtrChCostDt = (spaces >> parseCost) `sepBy1` (spaces >> lex (char ','))
 
 -- | @parseCtrChldFun isRec dts@ parses the children of a @ConstructorFunction@
 -- where isRec specifies if the data-type is recursive, and dts the known
 -- data-types.
 parseCtrChRec       :: Stream s m Char =>
-                      Bool -> ParsecT s u m (ConstructorChild String Int, String)
+                      Bool -> ParsecT s u m (ConstructorChild String, String)
 parseCtrChRec isRec = if isRec
                           then string recursiveSymbol >> return (ConstructorRecursive, [])
                           else fail "data-type not declared as recursive (µX.< ... >)"
@@ -111,7 +108,7 @@ parseCtrChRec isRec = if isRec
 -- specifies disallowed data-type names. @isRec@ specifies if the recursive
 -- element 'X' is allowed to be parsed.
 parseCtrChDt :: Stream s m Char =>
-               ParsecT s u m (ConstructorChild String Int, String)
+               ParsecT s u m (ConstructorChild String, String)
 parseCtrChDt = do
   -- dt <- choice $ map string dts -- where dts are the already parsed data-types
 
@@ -120,7 +117,7 @@ parseCtrChDt = do
   -- returning a tuple with the datatype string.
 
   dt <- ident "()," [recursiveSymbol]
-  c <- par parseCtrChCostDt <|> return []
-  return $ (ConstructorDatatype dt c, dt)
+  -- c <- par parseCtrChCostDt <|> return []
+  return (ConstructorDatatype dt, dt)
 
 

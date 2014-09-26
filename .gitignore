@@ -8,3 +8,4 @@ cabal.sandbox.config
 /TAGS
 /src/Test.hs
 *TAGS
+/emacs.desktop

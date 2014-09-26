@@ -10,20 +10,20 @@ module Data.Rewriting.Datatype.Type
     , ConstructorChild (..)
     ) where
 
-import           Data.Rewriting.Cost.Type
+
 import           Data.Rewriting.Term.Type hiding (fold, map)
 
 
-data Datatype dt cn c = Datatype
+data Datatype dt cn = Datatype
     { datatype     :: dt
-    , constructors :: [Constructor dt cn c]
+    , constructors :: [Constructor dt cn]
     } deriving (Show, Eq)
 
 
-data Constructor dt cn c = Constructor cn [ConstructorChild dt c] (Cost c)
-                          deriving (Show, Eq)
+data Constructor dt cn = Constructor cn [ConstructorChild dt]
+                           deriving (Show, Eq)
 
 
-data ConstructorChild dt c = ConstructorRecursive
-                           | ConstructorDatatype dt [Cost c]
+data ConstructorChild dt = ConstructorRecursive
+                         | ConstructorDatatype dt
                              deriving (Show, Eq)

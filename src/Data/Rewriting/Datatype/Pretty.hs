@@ -9,54 +9,50 @@ module Data.Rewriting.Datatype.Pretty
     , prettyConstructorChild
     ) where
 
-import           Data.Rewriting.Cost.Pretty   (prettyCost)
-import           Data.Rewriting.Cost.Type     (Cost (..))
+
 import           Data.Rewriting.Datatype.Type
 
 import           Data.List                    (intersperse)
 import           Text.PrettyPrint.ANSI.Leijen
 
 
-prettyDatatype :: Doc -> (dt -> Doc) -> (cn -> Doc) -> (c -> Doc) -> Datatype dt cn c -> Doc
-prettyDatatype arr pDt pCn pC (Datatype dtName cs) =
+prettyDatatype :: Doc -> (dt -> Doc) -> (cn -> Doc) -> Datatype dt cn -> Doc
+prettyDatatype arr pDt pCn (Datatype dtName cs) =
     hang 2 $ pDt dtName <+> arr <+>
-     (if isRecursive cs then (text "µX.<") else (text "<"))
-     <+> (hcat $ (intersperse (text ", ")) (map pCtr cs)) <+> text ">"
+     text (if isRecursive cs then "µX.<" else "<")
+     <+> hcat (intersperse (text ", ") (map pCtr cs)) <+> text ">"
     where
-      isRecursive = any (\(Constructor _ ch _) -> any (\ctrCh -> case ctrCh of
+      isRecursive = any (\(Constructor _ ch) -> any (\ctrCh -> case ctrCh of
                                                                   ConstructorRecursive -> True
                                                                   _ -> False
                                                                   ) ch)
-      pCtr = prettyConstructor (text ":") pDt pCn pC
+      pCtr = prettyConstructor pDt pCn
 
 
-prettyConstructor :: Doc -> (dt -> Doc) -> (cn -> Doc) -> (c -> Doc) -> Constructor dt cn c -> Doc
-prettyConstructor arr _   pCn pC (Constructor cn [] cst) =
-    pCn cn <> (case cst of; CostEmpty -> empty; _ -> arr <> prettyCost pC cst)
-prettyConstructor arr pDt pCn pC  (Constructor cn chlds cst) =
-    pCn cn <> text "(" <> (hcat $ intersperse (text ", ") (map pCChld chlds)) <>
-        text ")" <> (case cst of; CostEmpty -> empty; _ -> arr <> prettyCost pC cst)
+prettyConstructor :: (dt -> Doc) -> (cn -> Doc) -> Constructor dt cn -> Doc
+prettyConstructor _   pCn (Constructor cn []) =
+    pCn cn -- <> (case cst of; CostEmpty -> empty; _ -> arr <> prettyCost pC cst)
+prettyConstructor pDt pCn (Constructor cn chlds) =
+    pCn cn <> text "(" <> hcat (intersperse (text ", ") (map pCChld chlds)) <>
+        text ")" -- <> (case cst of; CostEmpty -> empty; _ -> arr <> prettyCost pC cst)
     where
-      pCChld = prettyConstructorChild pDt pC
+      pCChld = prettyConstructorChild pDt
 
 
-prettyConstructorChild :: (dt -> Doc) -> (c -> Doc) -> ConstructorChild dt c -> Doc
-prettyConstructorChild _   _  (ConstructorRecursive)        = text "X"
-prettyConstructorChild pDt _  (ConstructorDatatype dt [])   = pDt dt
-prettyConstructorChild pDt pC (ConstructorDatatype dt csts) =
-    pDt dt <> text "(" <> (hcat $ (intersperse (text ", ") (map pCost csts))) <> text ")"
-        where pCost = prettyCost pC
+prettyConstructorChild :: (dt -> Doc) -> ConstructorChild dt -> Doc
+prettyConstructorChild _   (ConstructorRecursive)        = text "X"
+prettyConstructorChild pDt (ConstructorDatatype dt)   = pDt dt
 
 
-instance (Pretty dt, Pretty c) => Pretty (ConstructorChild dt c) where
-    pretty = prettyConstructorChild pretty pretty
+instance (Pretty dt) => Pretty (ConstructorChild dt) where
+    pretty = prettyConstructorChild pretty
 
 
-instance (Pretty dt, Pretty cn, Pretty c) => Pretty (Constructor dt cn c) where
-    pretty = prettyConstructor (text "=") pretty pretty pretty
+instance (Pretty dt, Pretty cn) => Pretty (Constructor dt cn) where
+    pretty = prettyConstructor pretty pretty
 
 
-instance (Pretty dt, Pretty cn, Pretty c) => Pretty (Datatype dt cn c) where
-    pretty = prettyDatatype (text "=") pretty pretty pretty
+instance (Pretty dt, Pretty cn) => Pretty (Datatype dt cn) where
+    pretty = prettyDatatype (text "=") pretty pretty
 
 

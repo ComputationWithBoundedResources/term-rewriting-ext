@@ -17,10 +17,6 @@ import Text.Parsec hiding (parse)
 import Prelude hiding (lex)
 import Data.List (intersperse)
 
-#ifdef DEBUG
-import Debug.Trace (trace)
-#endif
-
 
 parse        :: Stream s m Char => [String] -> [String] -> ParsecT s u m (Signature String String)
 parse vs dts = do

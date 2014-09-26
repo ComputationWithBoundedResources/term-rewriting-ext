@@ -63,6 +63,7 @@ library
         Data.Rewriting.CriticalPair.Type
         Data.Rewriting.CriticalPair.Ops
         Data.Rewriting.Datatype
+        Data.Rewriting.Datatype.Ops
         Data.Rewriting.Datatype.Parse
         Data.Rewriting.Datatype.Pretty
         Data.Rewriting.Datatype.Type
@@ -70,9 +71,6 @@ library
         Data.Rewriting.Signature.Parse
         Data.Rewriting.Signature.Pretty
         Data.Rewriting.Signature.Type
-        Data.Rewriting.Cost
-        Data.Rewriting.Cost.Type
-        Data.Rewriting.Cost.Pretty
     other-modules:
         Data.Rewriting.Utils
         Data.Rewriting.Utils.Parse

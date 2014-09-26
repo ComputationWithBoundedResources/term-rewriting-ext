@@ -25,17 +25,16 @@ import qualified Data.Rewriting.Datatype as Dt (parse, recursiveSymbol)
 import Data.Rewriting.Datatype.Type (Datatype (datatype, constructors), Constructor (..))
 import qualified Data.Rewriting.Signature as Sig
 
-import Data.List (partition, union)
-import Data.Maybe (isJust, fromJust)
+
+import Debug.Trace (trace)
+
+import Data.List (partition, union, find)
+import Data.Maybe (isJust, fromJust, fromMaybe, isNothing)
 import Prelude hiding (lex, catch)
-import Control.Exception (catch)
+import Control.Exception (catch, throw)
 import Control.Monad.Error
 import Control.Monad (liftM, liftM3)
 import Text.Parsec hiding (parse)
-
-#ifdef DEBUG
-import Debug.Trace (trace)
-#endif
 
 data ProblemParseError = UnknownParseError String
                        | UnsupportedStrategy String
@@ -45,27 +44,27 @@ data ProblemParseError = UnknownParseError String
 
 instance Error ProblemParseError where strMsg = UnknownParseError
 
-parseFileIO :: FilePath -> IO (Problem String String String String String Int)
+parseFileIO :: FilePath -> IO (Problem String String String String String)
 parseFileIO file = do r <- fromFile file
                       case r of
                         Left err -> do { putStrLn "following error occured:"; print err; mzero }
                         Right t  -> return t
 
-parseIO :: String -> IO (Problem String String String String String Int)
+parseIO :: String -> IO (Problem String String String String String)
 parseIO string = case fromString string of
                     Left err -> do { putStrLn "following error occured:"; print err; mzero }
                     Right t  -> return t
 
-fromFile :: FilePath -> IO (Either ProblemParseError (Problem String String String String String Int))
+fromFile :: FilePath -> IO (Either ProblemParseError (Problem String String String String String))
 fromFile file = fromFile' `catch` (return . Left . FileReadError) where
   fromFile' = fromCharStream sn `liftM` readFile file
   sn         = "<file " ++ file ++ ">"
 
-fromString :: String -> Either ProblemParseError (Problem String String String String String Int)
+fromString :: String -> Either ProblemParseError (Problem String String String String String)
 fromString = fromCharStream "supplied string"
 
 fromCharStream :: (Stream s (Either ProblemParseError) Char) => SourceName -> s
-               -> Either ProblemParseError (Problem String String String String String Int)
+               -> Either ProblemParseError (Problem String String String String String)
 fromCharStream sourcename input =
   case runParserT parse initialState sourcename input of
     Right (Left e)  -> Left $ SomeParseError e
@@ -83,22 +82,24 @@ fromCharStream sourcename input =
                                       Prob.comment    = Nothing }
 
 
-type ParserState = Problem String String String String String Int
+type ParserState = Problem String String String String String
 
 type WSTParser s a = ParsecT s ParserState (Either ProblemParseError) a
 
-modifyProblem :: (Problem String String String String String Int
-                     -> Problem String String String String String Int) -> WSTParser s ()
+modifyProblem :: (Problem String String String String String
+                     -> Problem String String String String String) -> WSTParser s ()
 modifyProblem = modifyState
 
 parsedVariables :: WSTParser s [String]
 parsedVariables = Prob.variables `liftM` getState
 
-parsedDatatypes :: WSTParser s (Maybe [Datatype String String Int])
+parsedDatatypes :: WSTParser s (Maybe [Datatype String String])
 parsedDatatypes = Prob.datatypes `liftM` getState
 
+parsedSignatures :: WSTParser s (Maybe [Sig.Signature String String])
+parsedSignatures = Prob.signatures `liftM` getState
 
-parse :: (Stream s (Either ProblemParseError) Char) => WSTParser s (Problem String String String String String Int)
+parse :: (Stream s (Either ProblemParseError) Char) => WSTParser s (Problem String String String String String)
 parse = spaces >> parseDecls >> eof >> getState where
   parseDecls = many1 (par parseDecl)
   parseDecl =  decl "VAR"        vars        (\ e p -> p {Prob.variables = e `union` Prob.variables p})
@@ -122,7 +123,7 @@ parse = spaces >> parseDecls >> eof >> getState where
          r <- p -- <?> "Error parsing " ++ name ++ " block"
          modifyProblem $ f r
 
-  maybeAppend fld e p = Just $ maybe [] id (fld p) ++ e
+  maybeAppend fld e p = Just $ fromMaybe [] (fld p) ++ e
 
 
 vars :: (Stream s (Either ProblemParseError) Char) => WSTParser s [String]
@@ -146,7 +147,7 @@ theory = many thdecl where
 
 
 datatypes :: (Stream s (Either ProblemParseError) Char) =>
-               WSTParser s [Datatype String String Int]
+               WSTParser s [Datatype String String]
 datatypes = do vs <- parsedVariables
                lst <- many (spaces >> Dt.parse vs)
                let dts = map fst lst
@@ -155,14 +156,12 @@ datatypes = do vs <- parsedVariables
                when (isJust multDecl)
                         (fail $ "Error: " ++ fromJust multDecl)
                ctrDtCheck <- checkCtrDts chk dts -- check data-types used in constructors
-               when (or ctrDtCheck)
-                    (fail $ "Datatype problem detected.") -- not gonna get thrown!
+               when (or ctrDtCheck)             -- needed to ensure evaluation.
+                    (fail "Datatype problem detected.") -- not gonna get thrown!
                return dts <?> "Datatypes"
     where
-      -- TODO: check length of costs for ConstructorDatatype
-
       -- check for multiple constructor symbols across all data-types declarations
-      checkMultDecl :: ([String],[String]) -> [Datatype String String Int] -> Maybe String
+      checkMultDecl :: ([String],[String]) -> [Datatype String String] -> Maybe String
       checkMultDecl _ []                   = Nothing
       checkMultDecl (dtSs, ctrSs) (d:ds)
           | dtName `elem` dtSs             = Just $ "datatype " ++ dtName ++ " declared more than once."
@@ -170,7 +169,7 @@ datatypes = do vs <- parsedVariables
           | otherwise                      = checkMultDecl (dtName : dtSs, nCtrSs ++ ctrSs) ds
           where
             dtName = datatype d
-            nCtrSs = map (\(Constructor n _ _) -> n) (constructors d)
+            nCtrSs = map (\(Constructor n _) -> n) (constructors d)
 
             -- Check for multiple constructor symbols inside of one data-type declaration
             multCtrs             :: [String] -> [String] -> Maybe String
@@ -179,7 +178,7 @@ datatypes = do vs <- parsedVariables
                 | n `elem` ctrNs = Just $ "Constructor " ++ n ++ " is defined more than once."
                 | otherwise      = multCtrs (n : ctrNs) ns
 
-      checkCtrDts :: Monad m => [String] -> [Datatype String cn c] -> m [Bool]
+      checkCtrDts :: Monad m => [String] -> [Datatype String cn] -> m [Bool]
       checkCtrDts str dts' = mapM (\x -> do
                                      when (x `notElem` dtsStr && x /= Dt.recursiveSymbol)
                                               (fail $ "ERROR: Datatype " ++ show x ++
@@ -191,13 +190,31 @@ datatypes = do vs <- parsedVariables
 
 signatures :: (Stream s (Either ProblemParseError) Char) => WSTParser s [Sig.Signature String String]
 signatures = do mDts <- parsedDatatypes
+                sigs <- parsedSignatures
                 case mDts of    -- ensure to fail in Parser Monad, not in [] Monad with fromMaybe!
                   Nothing -> fail $ "expecting non-empty datatypes block (DATATYPES) " ++ --
                              "before signatures block (SIGNATURES). Ensure that" ++
-                             " DATATYPES is spelled correctly in input file."
+                             " DATATYPES is spelled correctly in the input file."
                   Just dts -> do
-                            vs <- parsedVariables
-                            many (spaces >> Sig.parse vs (map datatype dts))
+                             vs <- parsedVariables
+                             nSig <- many (spaces >> Sig.parse vs (map datatype dts))
+                             let allSigs = nSig ++ fromMaybe [] sigs
+                             if and (checkMultSigs allSigs)
+                                then return nSig
+                                else fail $ "Multiple signature declarations of the same function"
+                                       ++" are not allowed. Function name: "
+                                       ++ show (Sig.lhsRootSym $
+                                                allSigs !! (length (checkMultSigs allSigs) - 1))
+
+  where checkMultSigs :: [Sig.Signature String String] -> [Bool]
+        checkMultSigs [] = [True]
+        checkMultSigs s = fst (foldl fun ([], tail s) s)
+
+        fun (acc,[]) _ = (acc, [])
+        fun (acc,sigs') (Sig.Signature s _ _) =
+          if isNothing (find (\x -> Sig.lhsRootSym x == s) sigs')
+              then (True : acc,tail sigs')
+              else (False : acc, [])
 
 
 rules :: (Stream s (Either ProblemParseError) Char) => WSTParser s (Prob.RulesPair String String)
