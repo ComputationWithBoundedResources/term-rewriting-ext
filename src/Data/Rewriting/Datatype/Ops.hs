@@ -7,9 +7,9 @@
 -- Created: Mon Sep 15 09:33:58 2014 (+0200)
 -- Version:
 -- Package-Requires: ()
--- Last-Updated: Wed Sep 24 04:22:29 2014 (+0200)
+-- Last-Updated: Mon Sep 29 13:39:06 2014 (+0200)
 --           By: Manuel Schneckenreither
---     Update #: 24
+--     Update #: 26
 -- URL:
 -- Doc URL:
 -- Keywords:
@@ -59,7 +59,7 @@ import           Data.Rewriting.Problem.Type
 import           Data.List                    (find)
 import           Data.Maybe                   (fromMaybe)
 
-getDatatypeWith :: Problem f v s dt cn -> (Datatype dt cn -> Bool) -> Maybe (Datatype dt cn)
+getDatatypeWith :: Problem f v s sDt dt cn -> (Datatype dt cn -> Bool) -> Maybe (Datatype dt cn)
 getDatatypeWith prob f = find f (fromMaybe [] (datatypes prob))
 
 

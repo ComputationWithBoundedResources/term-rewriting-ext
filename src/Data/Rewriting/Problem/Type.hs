@@ -1,7 +1,7 @@
 -- This file is part of the 'term-rewriting' library. It is licensed
 -- under an MIT license. See the accompanying 'LICENSE' file for details.
 --
--- Authors: Martin Avanzini, Christial Sternagel, Manuel Schneckenreither
+-- Authors: Martin Avanzini, Christian Sternagel, Manuel Schneckenreither
 
 module Data.Rewriting.Problem.Type (
   StartTerms (..),
@@ -31,12 +31,12 @@ data Theory f v = SymbolProperty String [f]
                 | Equations [Rule f v] deriving (Eq, Show)
 
 
-data Problem f v s dt cn = Problem
+data Problem f v s sDt dt cn = Problem
     { startTerms :: StartTerms
     , strategy   :: Strategy
     , theory     :: Maybe [Theory f v]
     , datatypes  :: Maybe [Datatype dt cn]
-    , signatures :: Maybe [Signature s dt]
+    , signatures :: Maybe [Signature s sDt]
     , rules      :: RulesPair f v
     , variables  :: [v]
     , symbols    :: [f]

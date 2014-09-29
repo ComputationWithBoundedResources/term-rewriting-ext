@@ -22,19 +22,19 @@ module Data.Rewriting.Rules.Rewrite (
     listContexts,
 ) where
 
-import Data.Rewriting.Substitution
-import Data.Rewriting.Pos
-import Data.Rewriting.Rule
+import           Data.Rewriting.Pos
+import           Data.Rewriting.Rule
+import           Data.Rewriting.Substitution
 
-import Data.Maybe
+import           Data.Maybe
 
 -- | A reduct. It contains the resulting term, the position that the term
 -- was rewritten at, and the applied rule.
 data Reduct f v v' = Reduct {
      result :: Term f v,
-     pos :: Pos,
-     rule :: Rule f v',
-     subst :: GSubst v' f v
+     pos    :: Pos,
+     rule   :: Rule f v',
+     subst  :: GSubst v' f v
 }
 
 -- | A rewrite strategy.

@@ -44,27 +44,27 @@ data ProblemParseError = UnknownParseError String
 
 instance Error ProblemParseError where strMsg = UnknownParseError
 
-parseFileIO :: FilePath -> IO (Problem String String String String String)
+parseFileIO :: FilePath -> IO (Problem String String String String String String)
 parseFileIO file = do r <- fromFile file
                       case r of
                         Left err -> do { putStrLn "following error occured:"; print err; mzero }
                         Right t  -> return t
 
-parseIO :: String -> IO (Problem String String String String String)
+parseIO :: String -> IO (Problem String String String String String String)
 parseIO string = case fromString string of
                     Left err -> do { putStrLn "following error occured:"; print err; mzero }
                     Right t  -> return t
 
-fromFile :: FilePath -> IO (Either ProblemParseError (Problem String String String String String))
+fromFile :: FilePath -> IO (Either ProblemParseError (Problem String String String String String String))
 fromFile file = fromFile' `catch` (return . Left . FileReadError) where
   fromFile' = fromCharStream sn `liftM` readFile file
   sn         = "<file " ++ file ++ ">"
 
-fromString :: String -> Either ProblemParseError (Problem String String String String String)
+fromString :: String -> Either ProblemParseError (Problem String String String String String String)
 fromString = fromCharStream "supplied string"
 
 fromCharStream :: (Stream s (Either ProblemParseError) Char) => SourceName -> s
-               -> Either ProblemParseError (Problem String String String String String)
+               -> Either ProblemParseError (Problem String String String String String String)
 fromCharStream sourcename input =
   case runParserT parse initialState sourcename input of
     Right (Left e)  -> Left $ SomeParseError e
@@ -82,12 +82,12 @@ fromCharStream sourcename input =
                                       Prob.comment    = Nothing }
 
 
-type ParserState = Problem String String String String String
+type ParserState = Problem String String String String String String
 
 type WSTParser s a = ParsecT s ParserState (Either ProblemParseError) a
 
-modifyProblem :: (Problem String String String String String
-                     -> Problem String String String String String) -> WSTParser s ()
+modifyProblem :: (Problem String String String String String String
+                     -> Problem String String String String String String) -> WSTParser s ()
 modifyProblem = modifyState
 
 parsedVariables :: WSTParser s [String]
@@ -99,7 +99,7 @@ parsedDatatypes = Prob.datatypes `liftM` getState
 parsedSignatures :: WSTParser s (Maybe [Sig.Signature String String])
 parsedSignatures = Prob.signatures `liftM` getState
 
-parse :: (Stream s (Either ProblemParseError) Char) => WSTParser s (Problem String String String String String)
+parse :: (Stream s (Either ProblemParseError) Char) => WSTParser s (Problem String String String String String String)
 parse = spaces >> parseDecls >> eof >> getState where
   parseDecls = many1 (par parseDecl)
   parseDecl =  decl "VAR"        vars        (\ e p -> p {Prob.variables = e `union` Prob.variables p})
