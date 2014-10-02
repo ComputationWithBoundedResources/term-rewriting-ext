@@ -12,7 +12,7 @@ module Data.Rewriting.Problem.Parse (
   fromString,
   fromFile,
   fromCharStream,
-  ProblemParseError (..)
+  -- ProblemParseError (..)
   ) where
 
 import Data.Rewriting.Utils.Parse (lex, par, ident)
@@ -25,15 +25,16 @@ import qualified Data.Rewriting.Datatype as Dt (parse, recursiveSymbol)
 import Data.Rewriting.Datatype.Type (Datatype (datatype, constructors), Constructor (..))
 import qualified Data.Rewriting.Signature as Sig
 
-
+#ifdef DEBUG
 import Debug.Trace (trace)
+#endif
 
 import Data.List (partition, union, find)
 import Data.Maybe (isJust, fromJust, fromMaybe, isNothing)
-import Prelude hiding (lex, catch)
-import Control.Exception (catch, throw)
-import Control.Monad.Error
-import Control.Monad (liftM, liftM3)
+import Prelude hiding (lex)
+import Control.Exception (catch)
+import Control.Monad (mzero, liftM2, when, liftM)
+-- import Control.Monad.Except
 import Text.Parsec hiding (parse)
 
 data ProblemParseError = UnknownParseError String
@@ -42,7 +43,6 @@ data ProblemParseError = UnknownParseError String
                        | UnsupportedDeclaration String
                        | SomeParseError ParseError deriving (Show)
 
-instance Error ProblemParseError where strMsg = UnknownParseError
 
 parseFileIO :: FilePath -> IO (Problem String String String String String String)
 parseFileIO file = do r <- fromFile file
