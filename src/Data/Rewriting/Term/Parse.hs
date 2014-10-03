@@ -16,9 +16,10 @@ module Data.Rewriting.Term.Parse (
 import Data.Rewriting.Utils.Parse (lex, par, ident)
 import Prelude hiding (lex)
 import Control.Monad
--- import Control.Monad.Except ()
 import Data.Rewriting.Term.Type
 import Text.Parsec hiding (parse)
+import Control.Monad.Identity
+
 
 -- | Like 'fromString', but the result is wrapped in the IO monad, making this
 -- function useful for interactive testing.
@@ -33,8 +34,12 @@ parseIO xs input = case fromString xs input of
 -- | @fromString xs s@ parsers a term from the string @s@, where elements of @xs@
 -- are considered as variables.
 fromString :: [String] -> String -> Either ParseError (Term String String)
-fromString xs = runP (parseWST xs) () ""
+fromString xs = runP' (parseWST xs) () ""
 
+
+runP' :: (Stream s Identity t)
+     => Parsec s u a -> u -> SourceName -> s -> Either ParseError a
+runP' p u name s = runIdentity $ runPT p u name s
 
 -- | @parse fun var@ is a parser for terms, where @fun@ and @var@ are
 -- parsers for function symbols and variables, respectively. The @var@ parser
