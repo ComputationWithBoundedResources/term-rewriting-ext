@@ -34,7 +34,6 @@ import Data.Maybe (isJust, fromJust, fromMaybe, isNothing)
 import Prelude hiding (lex)
 import Control.Exception (catch)
 import Control.Monad (mzero, liftM2, when, liftM)
--- import Control.Monad.Except
 import Text.Parsec hiding (parse)
 
 data ProblemParseError = UnknownParseError String
