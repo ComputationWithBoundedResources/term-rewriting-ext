@@ -16,12 +16,15 @@ import           Data.Rewriting.Datatype.Type  (Datatype)
 import           Data.Rewriting.Rule.Type      (Rule (..))
 import           Data.Rewriting.Signature.Type (Signature)
 
+
 data StartTerms = AllTerms
                 | BasicTerms deriving (Eq, Show)
+
 
 data Strategy = Innermost
               | Full
               | Outermost deriving (Eq, Show)
+
 
 data RulesPair f v = RulesPair { strictRules :: [Rule f v]
                                , weakRules   :: [Rule f v] } deriving (Eq, Show)

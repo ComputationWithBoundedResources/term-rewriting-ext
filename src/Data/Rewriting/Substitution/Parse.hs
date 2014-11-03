@@ -3,21 +3,22 @@
 --
 -- Authors: Christian Sternagel
 
-{-# LANGUAGE FlexibleContexts#-}
+{-# LANGUAGE FlexibleContexts #-}
 module Data.Rewriting.Substitution.Parse (
     fromString,
     parse,
     parseIO
 ) where
 
-import Data.Rewriting.Utils.Parse (ident, lex, par)
-import Prelude hiding (lex)
-import qualified Data.Map as Map
-import Data.Rewriting.Term.Type
-import Data.Rewriting.Substitution.Type
-import qualified Data.Rewriting.Term.Parse as Term
-import Control.Monad
-import Text.Parsec hiding (parse)
+import           Control.Monad
+import qualified Data.Map                         as Map
+import           Data.Rewriting.Substitution.Type
+import qualified Data.Rewriting.Term.Parse        as Term
+import           Data.Rewriting.Term.Type
+import           Data.Rewriting.Utils.Parse       (ident, lex, par)
+import           Prelude                          hiding (lex)
+import           Text.Parsec                      hiding (parse)
+import           Text.Parsec.Prim                 (runP)
 
 
 parse :: (Ord v) =>

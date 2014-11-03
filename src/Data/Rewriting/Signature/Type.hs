@@ -13,4 +13,4 @@ data Signature s dt = Signature
     { lhsRootSym :: s
     , lhsSig     :: [dt]
     , rhsSig     :: dt
-    } deriving (Show, Eq)
+    } deriving (Show, Read, Eq)
