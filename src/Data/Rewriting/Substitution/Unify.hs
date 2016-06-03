@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 -- This file is part of the 'term-rewriting' library. It is licensed
 -- under an MIT license. See the accompanying 'LICENSE' file for details.
 --
@@ -8,23 +9,23 @@ module Data.Rewriting.Substitution.Unify (
     unifyRef,
 ) where
 
-import Data.Rewriting.Substitution.Type
-import Data.Rewriting.Substitution.Ops (apply)
-import qualified Data.Rewriting.Term.Ops as Term
-import qualified Data.Rewriting.Term.Type as Term
-import Data.Rewriting.Term.Type (Term (..))
+import           Data.Rewriting.Substitution.Ops  (apply)
+import           Data.Rewriting.Substitution.Type
+import qualified Data.Rewriting.Term.Ops          as Term
+import           Data.Rewriting.Term.Type         (Term (..))
+import qualified Data.Rewriting.Term.Type         as Term
 
-import qualified Data.Map as M
-import qualified Control.Monad.Union as UM
-import qualified Data.Union as U
-import Control.Monad.State
-import Control.Monad.ST
-import Control.Applicative
-import Control.Arrow
-import Data.Array.ST
-import Data.Array
-import Data.Maybe
-import Data.Word
+import           Control.Applicative
+import           Control.Arrow
+import           Control.Monad.ST
+import           Control.Monad.State
+import qualified Control.Monad.Union              as UM
+import           Data.Array
+import           Data.Array.ST
+import qualified Data.Map                         as M
+import           Data.Maybe
+import qualified Data.Union                       as U
+import           Data.Word
 
 -- The setup is as follows:
 --
@@ -148,16 +149,19 @@ acyclic size succs root = runST $ do
     let t :: ST s (STUArray s Int Word8)
         t = undefined
     color <- newArray (0, size-1) 0 `asTypeOf` t
-    let dfs n = do
-            c <- readArray color (U.fromNode n)
-            case c of
-                0 -> do
-                    writeArray color (U.fromNode n) 1
-                    flip (foldr andM) (map dfs (succs n)) $ do
-                        writeArray color (U.fromNode n) 2
-                        return True
-                1 -> return False
-                2 -> return True
+    let -- dfs :: (Monad m) =>
+        --      -- MArray (STUArray s) Word8 m =>
+        --      U.Node -> m Bool
+        dfs n = do
+          c <- readArray color (U.fromNode n)
+          case c of
+            0 -> do
+              writeArray color (U.fromNode n) 1
+              flip (foldr andM) (map dfs (succs n)) $ do
+                writeArray color (U.fromNode n) 2
+                return True
+            1 -> return False
+            2 -> return True
     dfs root
 
 -- monadic, logical and with short-cut evaluation
@@ -173,6 +177,7 @@ andM a b = do
 -- and may be removed in future versions of this library.
 unifyRef :: (Eq f, Ord v) => Term f v -> Term f v -> Maybe (Subst f v)
 unifyRef t u = fromMap <$> go [(t, u)] M.empty where
+
    go [] subst = Just subst
    go ((t, u) : xs) subst = case (t, u) of
       (Var v, t) -> add v t xs subst
@@ -180,10 +185,12 @@ unifyRef t u = fromMap <$> go [(t, u)] M.empty where
       (Fun f ts, Fun f' ts')
           | f /= f' || length ts /= length ts' -> Nothing
           | otherwise -> go (zip ts ts' ++ xs) subst
+
    add v t xs subst
        | Var v == t = go xs subst
        | occurs v t = Nothing
        | otherwise =
            let app = apply (fromMap (M.singleton v t))
            in  go (fmap (app *** app) xs) (M.insert v t (fmap app subst))
+
    occurs v t = v `elem` Term.vars t

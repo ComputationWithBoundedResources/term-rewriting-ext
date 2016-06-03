@@ -75,14 +75,14 @@ library
         Data.Rewriting.Utils
         Data.Rewriting.Utils.Parse
     build-depends:
-        containers >= 0.3,
-        multiset >= 0.2,
-        parsec >= 3,
-        union-find-array >= 0.1,
-        array >= 0.3,
-        ansi-wl-pprint >= 0.6,
-        mtl >= 1.1,
-        base >= 4
+        containers,
+        multiset,
+        parsec,
+        union-find-array,
+        array,
+        ansi-wl-pprint,
+        mtl,
+        base
     extensions:
         TypeSynonymInstances
         BangPatterns
@@ -94,14 +94,14 @@ library
         FlexibleInstances,
         StandaloneDeriving
 
-test-suite test
-    type:  exitcode-stdio-1.0
-    hs-source-dirs: test
-    main-is: Main.hs
-    build-depends:
-        base >= 4,
-        term-rewriting-ext,
-        containers >= 0.3,
-        HUnit >= 1.2,
-        QuickCheck >= 2.6
+-- test-suite test
+--     type:  exitcode-stdio-1.0
+--     hs-source-dirs: test
+--     main-is: Main.hs
+--     build-depends:
+--         base >= 4,
+--         term-rewriting-ext,
+--         containers >= 0.3,
+--         HUnit >= 1.2,
+--         QuickCheck >= 2.6
 
