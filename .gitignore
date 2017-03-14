@@ -9,3 +9,4 @@ cabal.sandbox.config
 /src/Test.hs
 *TAGS
 /emacs.desktop
+.stack-work/

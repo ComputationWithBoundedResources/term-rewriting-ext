@@ -82,7 +82,7 @@ parseCtr isRec vs = do
 -- non-empty sequence of letters and it is treated as variable iff it is not
 -- contained in @vs@ (ought to be the list of variables).
 parseCtrSymbol :: Stream s m Char => [String] -> ParsecT s u m String
-parseCtrSymbol vs = ident ":(),<>" vs <?> "constructor symbol"
+parseCtrSymbol vs = ident "(),<>" vs <?> "constructor symbol"
 
 -- | @parseCost@ parses an int.
 -- parseCost :: Stream s m Char => ParsecT s u m (Cost Int)
@@ -100,8 +100,8 @@ parseCtrSymbol vs = ident ":(),<>" vs <?> "constructor symbol"
 parseCtrChRec       :: Stream s m Char =>
                       Bool -> ParsecT s u m (ConstructorChild String, String)
 parseCtrChRec isRec = if isRec
-                          then string recursiveSymbol >> return (ConstructorRecursive, [])
-                          else fail "data-type not declared as recursive (µX.< ... >)"
+                      then string recursiveSymbol >> return (ConstructorRecursive, [])
+                      else fail "data-type not declared as recursive (µX.< ... >)"
 
 
 -- | @parseCtrDt dts@ parses a @Constructor String@ where the argument @dts@
