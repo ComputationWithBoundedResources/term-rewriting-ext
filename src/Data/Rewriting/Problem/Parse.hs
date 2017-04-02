@@ -164,7 +164,7 @@ datatypes = do vs <- parsedVariables
       checkMultDecl _ []                   = Nothing
       checkMultDecl (dtSs, ctrSs) (d:ds)
           | dtName `elem` dtSs             = Just $ "datatype " ++ dtName ++ " declared more than once."
-          | isJust (multCtrs ctrSs nCtrSs) = multCtrs ctrSs nCtrSs
+          -- | isJust (multCtrs ctrSs nCtrSs) = multCtrs ctrSs nCtrSs 
           | otherwise                      = checkMultDecl (dtName : dtSs, nCtrSs ++ ctrSs) ds
           where
             dtName = datatype d

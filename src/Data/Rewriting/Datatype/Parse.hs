@@ -15,6 +15,7 @@ module Data.Rewriting.Datatype.Parse
 import Text.Parsec hiding (parse)
 import Data.Rewriting.Utils.Parse (lex, par, angleBrackets, ident)
 import Data.Rewriting.Datatype.Type
+import Data.Char (isSpace)
 import Control.Monad
 import Prelude hiding (lex)
 
@@ -82,7 +83,12 @@ parseCtr isRec vs = do
 -- non-empty sequence of letters and it is treated as variable iff it is not
 -- contained in @vs@ (ought to be the list of variables).
 parseCtrSymbol :: Stream s m Char => [String] -> ParsecT s u m String
-parseCtrSymbol vs = ident "(),<>" vs <?> "constructor symbol"
+parseCtrSymbol vs = ident "(),>" vs <?> "constructor symbol"
+  -- s <- many1 (satisfy (\c -> not (isSpace c) && c `notElem` "(),>")) <|>
+  --      string ">("
+  -- guard (s `notElem` vs)
+  -- return s
+
 
 -- | @parseCost@ parses an int.
 -- parseCost :: Stream s m Char => ParsecT s u m (Cost Int)
