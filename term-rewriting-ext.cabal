@@ -6,7 +6,7 @@ author:        Martin Avanzini,
                Christian Sternagel,
                Ilya Epifanov,
                Manuel Schneckenreither
-maintainer:    manuel.schneckenreither@student.uibk.ac.at,
+maintainer:    manuel.schneckenreither@uibk.ac.at,
                haskell-rewriting@informatik.uibk.ac.at
 license:       MIT
 license-file:  LICENSE
@@ -32,48 +32,48 @@ library
     hs-source-dirs:
         src
     exposed-modules:
-        Data.Rewriting.Term
-        Data.Rewriting.Term.Type
-        Data.Rewriting.Term.Ops
-        Data.Rewriting.Term.Parse
-        Data.Rewriting.Term.Pretty
-        Data.Rewriting.Pos
-        Data.Rewriting.Problem
-        Data.Rewriting.Problem.Type
-        Data.Rewriting.Problem.Parse
-        Data.Rewriting.Problem.Pretty
-        Data.Rewriting.Rule
-        Data.Rewriting.Rule.Type
-        Data.Rewriting.Rule.Pretty
-        Data.Rewriting.Rule.Ops
-        Data.Rewriting.Substitution
-        Data.Rewriting.Substitution.Type
-        Data.Rewriting.Substitution.Parse
-        Data.Rewriting.Substitution.Ops
-        Data.Rewriting.Substitution.Pretty
-        Data.Rewriting.Substitution.Match
-        Data.Rewriting.Substitution.Unify
-        Data.Rewriting.Rules
-        Data.Rewriting.Rules.Rewrite
-        Data.Rewriting.Rules.Ops
-        Data.Rewriting.Context
-        Data.Rewriting.Context.Type
-        Data.Rewriting.Context.Ops
-        Data.Rewriting.CriticalPair
-        Data.Rewriting.CriticalPair.Type
-        Data.Rewriting.CriticalPair.Ops
-        Data.Rewriting.Datatype
-        Data.Rewriting.Datatype.Ops
-        Data.Rewriting.Datatype.Parse
-        Data.Rewriting.Datatype.Pretty
-        Data.Rewriting.Datatype.Type
-        Data.Rewriting.Signature
-        Data.Rewriting.Signature.Parse
-        Data.Rewriting.Signature.Pretty
-        Data.Rewriting.Signature.Type
+        Data.Rewriting.Typed.Term
+        Data.Rewriting.Typed.Term.Type
+        Data.Rewriting.Typed.Term.Ops
+        Data.Rewriting.Typed.Term.Parse
+        Data.Rewriting.Typed.Term.Pretty
+        Data.Rewriting.Typed.Pos
+        Data.Rewriting.Typed.Problem
+        Data.Rewriting.Typed.Problem.Type
+        Data.Rewriting.Typed.Problem.Parse
+        Data.Rewriting.Typed.Problem.Pretty
+        Data.Rewriting.Typed.Rule
+        Data.Rewriting.Typed.Rule.Type
+        Data.Rewriting.Typed.Rule.Pretty
+        Data.Rewriting.Typed.Rule.Ops
+        Data.Rewriting.Typed.Substitution
+        Data.Rewriting.Typed.Substitution.Type
+        Data.Rewriting.Typed.Substitution.Parse
+        Data.Rewriting.Typed.Substitution.Ops
+        Data.Rewriting.Typed.Substitution.Pretty
+        Data.Rewriting.Typed.Substitution.Match
+        Data.Rewriting.Typed.Substitution.Unify
+        Data.Rewriting.Typed.Rules
+        Data.Rewriting.Typed.Rules.Rewrite
+        Data.Rewriting.Typed.Rules.Ops
+        Data.Rewriting.Typed.Context
+        Data.Rewriting.Typed.Context.Type
+        Data.Rewriting.Typed.Context.Ops
+        Data.Rewriting.Typed.CriticalPair
+        Data.Rewriting.Typed.CriticalPair.Type
+        Data.Rewriting.Typed.CriticalPair.Ops
+        Data.Rewriting.Typed.Datatype
+        Data.Rewriting.Typed.Datatype.Ops
+        Data.Rewriting.Typed.Datatype.Parse
+        Data.Rewriting.Typed.Datatype.Pretty
+        Data.Rewriting.Typed.Datatype.Type
+        Data.Rewriting.Typed.Signature
+        Data.Rewriting.Typed.Signature.Parse
+        Data.Rewriting.Typed.Signature.Pretty
+        Data.Rewriting.Typed.Signature.Type
     other-modules:
-        Data.Rewriting.Utils
-        Data.Rewriting.Utils.Parse
+        Data.Rewriting.Typed.Utils
+        Data.Rewriting.Typed.Utils.Parse
     build-depends:
         containers,
         multiset,
@@ -93,15 +93,4 @@ library
         TypeSynonymInstances,
         FlexibleInstances,
         StandaloneDeriving
-
--- test-suite test
---     type:  exitcode-stdio-1.0
---     hs-source-dirs: test
---     main-is: Main.hs
---     build-depends:
---         base >= 4,
---         term-rewriting-ext,
---         containers >= 0.3,
---         HUnit >= 1.2,
---         QuickCheck >= 2.6
 
