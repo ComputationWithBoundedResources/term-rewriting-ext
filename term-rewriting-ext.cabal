@@ -80,7 +80,7 @@ library
         parsec,
         union-find-array,
         array,
-        ansi-wl-pprint,
+        ansi-wl-pprint >= 0.6,
         mtl,
         base
     extensions:
