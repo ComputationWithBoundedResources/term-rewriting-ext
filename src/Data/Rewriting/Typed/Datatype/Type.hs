@@ -27,3 +27,11 @@ data Constructor dt cn = Constructor cn [ConstructorChild dt]
 data ConstructorChild dt = ConstructorRecursive
                          | ConstructorDatatype dt
                              deriving (Show, Eq)
+
+
+mapDt :: (dt1 -> dt2) -> (cn1 -> cn2) -> Datatype dt1 cn1 -> Datatype dt2 cn2
+mapDt f g (Datatype dt cs) = Datatype (f dt) (fmap mapCtr cs)
+  where mapCtr (Constructor cn dts) = Constructor (g cn) (fmap mapCtrChld dts)
+        mapCtrChld (ConstructorDatatype dt) = ConstructorDatatype (f dt)
+        mapCtrChld ConstructorRecursive     = ConstructorRecursive
+
