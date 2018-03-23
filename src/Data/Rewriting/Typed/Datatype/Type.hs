@@ -8,6 +8,7 @@ module Data.Rewriting.Typed.Datatype.Type
     , Datatype (..)
     , Constructor (..)
     , ConstructorChild (..)
+    , mapDt
     ) where
 
 

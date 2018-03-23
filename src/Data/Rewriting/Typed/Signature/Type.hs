@@ -6,6 +6,7 @@
 
 module Data.Rewriting.Typed.Signature.Type
     ( Signature (..)
+    , mapSig
     ) where
 
 
