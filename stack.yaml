@@ -4,8 +4,8 @@ packages:
 - .
 extra-deps:
 - ansi-terminal-0.6.2.3
-- ansi-wl-pprint-0.6.7.3
+- ansi-wl-pprint-0.6.8.2
 - mtl-2.2.1
-- multiset-0.3.3
+- multiset-0.3.4
 - union-find-array-0.1.0.2
-resolver: ghc-8
+resolver: ghc-8.4.1

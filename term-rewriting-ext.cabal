@@ -76,11 +76,11 @@ library
         Data.Rewriting.Typed.Utils.Parse
     build-depends:
         containers,
-        multiset,
+        multiset >= 0.3.4,
         parsec,
         union-find-array,
         array,
-        ansi-wl-pprint >= 0.6,
+        ansi-wl-pprint >= 0.6.8,
         mtl,
         base
     extensions:
