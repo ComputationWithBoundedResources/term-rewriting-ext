@@ -32,7 +32,7 @@ import Debug.Trace (trace)
 import Data.List (partition, union, find)
 import Data.Maybe (isJust, fromJust, fromMaybe, isNothing)
 import Prelude hiding (lex)
-import Control.Exception (catch)
+import Control.Exception (toException, Exception, SomeException, throwIO, catch)
 import Control.Monad (mzero, liftM2, when, liftM)
 import Text.Parsec hiding (parse)
 
@@ -42,16 +42,17 @@ data ProblemParseError = UnknownParseError String
                        | UnsupportedDeclaration String
                        | SomeParseError ParseError deriving (Show)
 
+instance Exception ProblemParseError
 
 parseFileIO :: FilePath -> IO (Problem String String String String String String)
 parseFileIO file = do r <- fromFile file
                       case r of
-                        Left err -> do { putStrLn "following error occured:"; print err; mzero }
+                        Left err -> fail (show err)
                         Right t  -> return t
 
 parseIO :: String -> IO (Problem String String String String String String)
 parseIO string = case fromString string of
-                    Left err -> do { putStrLn "following error occured:"; print err; mzero }
+                    Left err -> fail (show err)
                     Right t  -> return t
 
 fromFile :: FilePath -> IO (Either ProblemParseError (Problem String String String String String String))
