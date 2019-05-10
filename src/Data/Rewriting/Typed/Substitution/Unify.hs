@@ -69,8 +69,8 @@ solve ((t, u) : xs) = do
             solve xs
         _ | funari t' == funari u' -> do
             -- matching function applications: expand ...
-            FunA _ ts <- expand t t'
-            FunA _ us <- expand u u'
+            ~(FunA _ ts) <- expand t t'
+            ~(FunA _ us) <- expand u u'
             UM.merge (\t _ -> (t, ())) t u
             -- ... and equate the argument lists.
             solve (zip ts us ++ xs)
