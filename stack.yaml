@@ -1,15 +1,6 @@
 flags: {}
-extra-package-dbs: []
 packages:
-- .
+ - '.'
 extra-deps:
-- ansi-terminal-0.6.2.3
-- ansi-wl-pprint-0.6.8.2
-- mtl-2.2.1
-- multiset-0.3.4
-- union-find-array-0.1.0.2
-- ghc-paths-0.1.0.9
-- network-2.7.0.2
-- random-1.1
-- syb-0.7
-resolver: ghc-8.4.1
+ - union-find-array-0.1.0.2
+resolver: lts-16.1

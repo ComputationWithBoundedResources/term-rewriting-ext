@@ -45,7 +45,7 @@ parseSigRhs dts = checkDts dts parseDatatypeName
 -- | @checkDts dts p@ parses with parser @p@ and then checks if the parsed value
 -- is in the list @dts@. If so, it returns the parsed value, otherwise, it
 -- throws an error using @fail@.
-checkDts       :: Monad m => [String] -> m String -> m String
+checkDts       :: (Monad m, MonadFail m) => [String] -> m String -> m String
 checkDts dts p = p >>= (\x -> if x `elem` dts
                               then return x
                               else fail $ "expecting [] for no parameters or " ++

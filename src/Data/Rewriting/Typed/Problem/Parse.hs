@@ -178,7 +178,7 @@ datatypes = do vs <- parsedVariables
                 | n `elem` ctrNs = Just $ "Constructor " ++ n ++ " is defined more than once."
                 | otherwise      = multCtrs (n : ctrNs) ns
 
-      checkCtrDts :: Monad m => [String] -> [Datatype String cn] -> m [Bool]
+      checkCtrDts :: (Monad m, MonadFail m) => [String] -> [Datatype String cn] -> m [Bool]
       checkCtrDts str dts' = mapM (\x -> do
                                      when (x `notElem` dtsStr && x /= Dt.recursiveSymbol)
                                               (fail $ "ERROR: Datatype " ++ show x ++

@@ -88,7 +88,8 @@ prettyProblem fun var sign sDt dt cn prob =  block "Start-Terms" (ppST `on` star
                                                  <$$> maybeblock "Comment" ppComment comment where
   pp `on` fld = pp $ fld prob
   block n pp = hang 3 $ underline (text $ n ++ ":") <+> pp
-  maybeblock n pp f = printWhen (isJust `on` f) (block n (pp `on` (fromJust . f)))
+  maybeblock n pp f = -- printWhen (isJust `on` f)
+    (block n (pp `on` (fromJust . f)))
   commalist  = fillSep . punctuate (text ",")
 
 
