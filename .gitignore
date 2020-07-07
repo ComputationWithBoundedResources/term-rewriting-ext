@@ -10,3 +10,5 @@ cabal.sandbox.config
 *TAGS
 /emacs.desktop
 .stack-work/
+stack.yaml.lock
+dist-newstyle/
